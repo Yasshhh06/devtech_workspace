@@ -7,7 +7,7 @@ import DocumentsView from "@/components/documents/DocumentsView";
 
 export default function InternDocumentsPage() {
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-slate-950 font-sans text-gray-900 dark:text-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <Header />

@@ -23,22 +23,22 @@ export default function ResourcesView() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {resources.map((res) => (
-          <div key={res.id} className="bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3 flex flex-col justify-between">
+          <div key={res.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3 flex flex-col justify-between hover:shadow-md transition">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded">
                   {res.category}
                 </span>
-                <span className="text-[10px] font-bold text-gray-400">{res.type}</span>
+                <span className="text-[10px] font-bold text-slate-500">{res.type}</span>
               </div>
-              <h3 className="font-extrabold text-sm text-gray-900 dark:text-white leading-snug">{res.title}</h3>
+              <h3 className="font-extrabold text-sm text-slate-900 leading-snug">{res.title}</h3>
             </div>
 
             <a
               href={res.url}
               target="_blank"
               rel="noreferrer"
-              className="w-full py-2 bg-blue-50 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-blue-600 font-bold rounded-xl text-xs transition flex items-center justify-center space-x-1.5"
+              className="w-full py-2 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold rounded-xl text-xs transition flex items-center justify-center space-x-1.5 border border-blue-200"
             >
               <span>Access Resource</span>
               <ExternalLink className="w-3.5 h-3.5" />

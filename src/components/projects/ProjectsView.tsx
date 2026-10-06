@@ -102,15 +102,15 @@ export default function ProjectsView() {
       </div>
 
       {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-blue-100 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
           <input
             type="text"
             value={filterSearch}
             onChange={(e) => setFilterSearch(e.target.value)}
             placeholder="Search projects & assigned tasks..."
-            className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
+            className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-800 font-medium placeholder-slate-400"
           />
         </div>
 
@@ -119,28 +119,28 @@ export default function ProjectsView() {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="appearance-none bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 pr-8 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none"
+              className="appearance-none bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 pr-8 text-xs font-semibold text-slate-700 focus:outline-none"
             >
               <option value="ALL">All Status</option>
               <option value="ACTIVE">ACTIVE</option>
               <option value="SUBMITTED">SUBMITTED</option>
               <option value="COMPLETED">COMPLETED / GRADED</option>
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-3 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-3 pointer-events-none" />
           </div>
 
           <div className="relative">
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}
-              className="appearance-none bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 pr-8 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none"
+              className="appearance-none bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 pr-8 text-xs font-semibold text-slate-700 focus:outline-none"
             >
               <option value="ALL">All Priority</option>
               <option value="HIGH">HIGH Priority</option>
               <option value="MEDIUM">MEDIUM Priority</option>
               <option value="LOW">LOW Priority</option>
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-3 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-3 pointer-events-none" />
           </div>
         </div>
       </div>
@@ -154,27 +154,27 @@ export default function ProjectsView() {
           return (
             <div
               key={proj.id}
-              className="bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition"
+              className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 flex flex-col justify-between hover:shadow-md transition"
             >
               {/* Header Info */}
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
-                  <h3 className="font-extrabold text-base text-gray-900 dark:text-white leading-snug">
+                  <h3 className="font-extrabold text-base text-slate-900 leading-snug">
                     {proj.title}
                   </h3>
-                  <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 shrink-0 ml-2">
+                  <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 shrink-0 ml-2">
                     {proj.priority}
                   </span>
                 </div>
 
-                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                <p className="text-xs text-slate-600 leading-relaxed">
                   {proj.description}
                 </p>
 
                 {/* Attached Specification Document */}
                 {proj.documentUrl && (
-                  <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center space-x-2 text-xs font-bold text-blue-700 dark:text-blue-300">
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center space-x-2 text-xs font-bold text-blue-800">
                       <FileText className="w-4 h-4 text-blue-600" />
                       <span className="truncate">{proj.documentName || "Task_Specification_Document.pdf"}</span>
                     </div>
@@ -193,20 +193,20 @@ export default function ProjectsView() {
 
               {/* ADMIN EVALUATION & GRADE SECTION (If Graded by Admin) */}
               {isGraded ? (
-                <div className="p-4 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-2xl space-y-2 text-xs">
+                <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-emerald-800 dark:text-emerald-300 flex items-center space-x-1.5">
+                    <span className="font-extrabold text-emerald-900 flex items-center space-x-1.5">
                       <Award className="w-4 h-4 text-emerald-600" />
                       <span>ADMIN EVALUATION & GRADE</span>
                     </span>
-                    <span className="px-3 py-1 bg-emerald-600 text-white font-black rounded-full text-xs shadow">
+                    <span className="px-3 py-1 bg-emerald-600 text-white font-black rounded-full text-xs shadow-xs">
                       SCORE: {sub.score} / 100
                     </span>
                   </div>
 
                   {sub.mentorRemarks && (
-                    <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 dark:border-emerald-900 text-gray-700 dark:text-gray-200 space-y-1">
-                      <p className="font-bold text-[11px] text-emerald-700 dark:text-emerald-400 flex items-center space-x-1">
+                    <div className="p-2.5 bg-white rounded-xl border border-emerald-200 text-slate-700 space-y-1">
+                      <p className="font-bold text-[11px] text-emerald-700 flex items-center space-x-1">
                         <MessageSquare className="w-3.5 h-3.5" />
                         <span>Mentor Remarks & Feedback:</span>
                       </p>
@@ -215,20 +215,20 @@ export default function ProjectsView() {
                   )}
                 </div>
               ) : sub ? (
-                <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl text-xs flex items-center space-x-2 text-amber-800 dark:text-amber-300">
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs flex items-center space-x-2 text-amber-800">
                   <Clock className="w-4 h-4 text-amber-600 shrink-0" />
                   <span>Submitted on {sub.submittedAt}. Awaiting Admin evaluation & grade.</span>
                 </div>
               ) : null}
 
               {/* Footer Controls */}
-              <div className="pt-3 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                <span className="text-gray-400 text-[11px]">Due: {proj.dueDate}</span>
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium text-[11px]">Due: {proj.dueDate}</span>
 
                 {!sub && (
                   <button
                     onClick={() => setActiveTab("submission")}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow transition flex items-center space-x-1.5"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs transition flex items-center space-x-1.5"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Submit Deliverables</span>

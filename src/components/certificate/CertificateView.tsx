@@ -20,25 +20,25 @@ export default function CertificateView() {
       </div>
 
       {/* Certificate Status Checklist */}
-      <div className="bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
-        <h3 className="font-extrabold text-base text-gray-900 dark:text-white pb-2 border-b">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+        <h3 className="font-extrabold text-base text-slate-900 pb-2 border-b border-slate-100">
           Internship Completion Requirements Checklist
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-center space-x-2 font-bold border border-emerald-200">
+          <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl flex items-center space-x-2 font-bold border border-emerald-200">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>Training Requirements Completed ✓</span>
           </div>
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-center space-x-2 font-bold border border-emerald-200">
+          <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl flex items-center space-x-2 font-bold border border-emerald-200">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>Ability Assessments Passed ✓</span>
           </div>
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-center space-x-2 font-bold border border-emerald-200">
+          <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl flex items-center space-x-2 font-bold border border-emerald-200">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>Capstone Project Drive Link Approved ✓</span>
           </div>
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-center space-x-2 font-bold border border-emerald-200">
+          <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl flex items-center space-x-2 font-bold border border-emerald-200">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>Attendance Criteria Met (90%+) ✓</span>
           </div>
@@ -46,34 +46,34 @@ export default function CertificateView() {
       </div>
 
       {/* Certificate Box Mockup */}
-      <div className="bg-white dark:bg-slate-900 border-4 border-amber-400 p-8 rounded-3xl text-center space-y-6 shadow-2xl relative overflow-hidden">
+      <div className="bg-white border-4 border-amber-400 p-8 rounded-3xl text-center space-y-6 shadow-xl relative overflow-hidden">
         <div className="space-y-1">
           <span className="text-xs font-bold text-amber-600 uppercase tracking-widest block">DevTech IT Solution</span>
-          <h2 className="text-3xl font-serif font-extrabold text-gray-900 dark:text-white">CERTIFICATE OF INTERNSHIP</h2>
-          <p className="text-xs text-gray-500 italic">This certificate is proudly presented to</p>
+          <h2 className="text-3xl font-serif font-extrabold text-slate-900">CERTIFICATE OF INTERNSHIP</h2>
+          <p className="text-xs text-slate-500 italic">This certificate is proudly presented to</p>
         </div>
 
         <div className="py-2">
-          <h3 className="text-2xl font-extrabold text-blue-600 dark:text-blue-400 underline decoration-amber-400 underline-offset-8">
+          <h3 className="text-2xl font-extrabold text-blue-600 underline decoration-amber-400 underline-offset-8">
             {currentIntern?.name || "Mohite Yash"}
           </h3>
-          <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mt-2">
+          <p className="text-xs font-semibold text-slate-700 mt-2">
             for successfully completing the internship program in <strong>{currentIntern?.domain || "Full Stack Web Development"}</strong>.
           </p>
         </div>
 
-        <div className="flex items-center justify-between text-xs border-t pt-4 text-gray-500">
+        <div className="flex items-center justify-between text-xs border-t border-slate-200 pt-4 text-slate-600">
           <div>
-            <p className="font-bold text-gray-800 dark:text-gray-200">Certificate ID</p>
-            <p className="font-mono text-[11px] text-blue-600">DTS-CERT-2026-00001</p>
+            <p className="font-bold text-slate-900">Certificate ID</p>
+            <p className="font-mono text-[11px] text-blue-600 font-bold">DTS-CERT-2026-00001</p>
           </div>
           <div>
-            <p className="font-bold text-gray-800 dark:text-gray-200">Issued On</p>
+            <p className="font-bold text-slate-900">Issued On</p>
             <p className="font-medium text-[11px]">15 October 2026</p>
           </div>
         </div>
 
-        <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-lg transition inline-flex items-center space-x-2">
+        <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition inline-flex items-center space-x-2">
           <Download className="w-4 h-4" />
           <span>Download Verified PDF Certificate</span>
         </button>

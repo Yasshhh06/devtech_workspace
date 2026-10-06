@@ -32,12 +32,12 @@ export default function ProfileView() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
-        <h3 className="font-extrabold text-base text-gray-900 dark:text-white pb-2 border-b">Intern Information Profile</h3>
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+        <h3 className="font-extrabold text-base text-slate-900 pb-2 border-b border-slate-100">Intern Information Profile</h3>
 
         {savedSuccess && (
           <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-semibold flex items-center space-x-2">
-            <Check className="w-4 h-4 text-emerald-500" />
+            <Check className="w-4 h-4 text-emerald-600" />
             <span>Profile details updated successfully!</span>
           </div>
         )}
@@ -45,73 +45,73 @@ export default function ProfileView() {
         <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold mb-1 text-gray-700 dark:text-gray-300">Full Display Name</label>
+              <label className="block font-bold mb-1 text-slate-700">Full Display Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl font-bold text-gray-900 dark:text-white"
+                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-bold mb-1 text-gray-700 dark:text-gray-300">Email Address (Read-only)</label>
+              <label className="block font-bold mb-1 text-slate-700">Email Address (Read-only)</label>
               <input
                 type="email"
                 readOnly
                 value={currentIntern?.email || "mohiteyash940@gmail.com"}
-                className="w-full p-2.5 bg-gray-100 dark:bg-slate-800/60 border rounded-xl text-gray-500 font-semibold cursor-not-allowed"
+                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-semibold cursor-not-allowed"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold mb-1 text-gray-700 dark:text-gray-300">Mobile Phone Number</label>
+              <label className="block font-bold mb-1 text-slate-700">Mobile Phone Number</label>
               <input
                 type="text"
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
-                className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl font-medium"
+                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-bold mb-1 text-gray-700 dark:text-gray-300">Domain Track</label>
+              <label className="block font-bold mb-1 text-slate-700">Domain Track</label>
               <input
                 type="text"
                 readOnly
                 value={currentIntern?.domain || "Full Stack Web Development"}
-                className="w-full p-2.5 bg-gray-100 dark:bg-slate-800/60 border rounded-xl text-gray-500 font-semibold"
+                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-semibold"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold mb-1 text-gray-700 dark:text-gray-300">Batch Code</label>
+              <label className="block font-bold mb-1 text-slate-700">Batch Code</label>
               <input
                 type="text"
                 readOnly
                 value={currentIntern?.batch || "DEV-2026-FS04"}
-                className="w-full p-2.5 bg-gray-100 dark:bg-slate-800/60 border rounded-xl text-gray-500 font-semibold"
+                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-semibold"
               />
             </div>
 
             <div>
-              <label className="block font-bold mb-1 text-gray-700 dark:text-gray-300">Assigned Mentor</label>
+              <label className="block font-bold mb-1 text-slate-700">Assigned Mentor</label>
               <input
                 type="text"
                 readOnly
                 value={currentIntern?.mentor || "Rahul Sharma"}
-                className="w-full p-2.5 bg-gray-100 dark:bg-slate-800/60 border rounded-xl text-gray-500 font-semibold"
+                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-semibold"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-lg transition"
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition"
           >
             Update Profile Information
           </button>

@@ -283,43 +283,43 @@ export default function AdminView() {
 
       {/* Metrics Summary Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center shrink-0">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[11px] font-semibold text-gray-400 block">Total Interns</span>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">{registeredInterns.length} Active</span>
+            <span className="text-[11px] font-semibold text-slate-500 block">Total Interns</span>
+            <span className="text-lg font-bold text-slate-900">{registeredInterns.length} Active</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center shrink-0">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
+          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
             <Send className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[11px] font-semibold text-gray-400 block">Pending Reviews</span>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">{pendingSubmissionsCount} Submissions</span>
+            <span className="text-[11px] font-semibold text-slate-500 block">Pending Reviews</span>
+            <span className="text-lg font-bold text-slate-900">{pendingSubmissionsCount} Submissions</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center shrink-0">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
+          <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
             <UserCheck className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[11px] font-semibold text-gray-400 block">Pending Leaves</span>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">{pendingLeavesCount} Requests</span>
+            <span className="text-[11px] font-semibold text-slate-500 block">Pending Leaves</span>
+            <span className="text-lg font-bold text-slate-900">{pendingLeavesCount} Requests</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shrink-0">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <Camera className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[11px] font-semibold text-gray-400 block">Today's Check-ins</span>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">
+            <span className="text-[11px] font-semibold text-slate-500 block">Today's Check-ins</span>
+            <span className="text-lg font-bold text-slate-900">
               {attendanceHistory.filter((a) => a.status === "Present" && a.date === "2026-10-06").length} / {registeredInterns.length}
             </span>
           </div>
@@ -327,13 +327,13 @@ export default function AdminView() {
       </div>
 
       {/* Admin Navigation Sub-Tabs */}
-      <div className="flex flex-wrap items-center gap-2 bg-gray-100 dark:bg-slate-800/60 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800 text-xs font-semibold">
+      <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
         <button
           onClick={() => setActiveAdminSubTab("assign-task")}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
             activeAdminSubTab === "assign-task"
-              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm font-bold"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              ? "bg-white text-blue-600 shadow-xs font-bold"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <PlusCircle className="w-4 h-4" />
@@ -344,8 +344,8 @@ export default function AdminView() {
           onClick={() => setActiveAdminSubTab("attendance-monitor")}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
             activeAdminSubTab === "attendance-monitor"
-              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm font-bold"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              ? "bg-white text-blue-600 shadow-xs font-bold"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <Camera className="w-4 h-4" />
@@ -356,8 +356,8 @@ export default function AdminView() {
           onClick={() => setActiveAdminSubTab("submissions-grader")}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition relative ${
             activeAdminSubTab === "submissions-grader"
-              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm font-bold"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              ? "bg-white text-blue-600 shadow-xs font-bold"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <Send className="w-4 h-4" />
@@ -373,8 +373,8 @@ export default function AdminView() {
           onClick={() => setActiveAdminSubTab("leave-approvals")}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition relative ${
             activeAdminSubTab === "leave-approvals"
-              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm font-bold"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              ? "bg-white text-blue-600 shadow-xs font-bold"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <UserCheck className="w-4 h-4" />
@@ -390,8 +390,8 @@ export default function AdminView() {
           onClick={() => setActiveAdminSubTab("calendar-manager")}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
             activeAdminSubTab === "calendar-manager"
-              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm font-bold"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              ? "bg-white text-blue-600 shadow-xs font-bold"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <CalendarCheck className="w-4 h-4" />
@@ -402,27 +402,27 @@ export default function AdminView() {
       {/* ================= SUB-TAB 1: GMAIL-STYLE EMAIL CHIP TASK ASSIGNMENT ================= */}
       {activeAdminSubTab === "assign-task" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-5">
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
             <div>
-              <h3 className="font-extrabold text-gray-900 dark:text-white text-lg flex items-center space-x-2">
+              <h3 className="font-extrabold text-slate-900 text-lg flex items-center space-x-2">
                 <Sparkles className="w-5 h-5 text-blue-600" />
                 <span>Assign Task to 50+ Multi-Domain Interns</span>
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Filter by domain, type or paste email addresses, tag multiple interns as chips, and attach specification documents!
               </p>
             </div>
 
             {taskAssignSuccess && (
-              <div className="p-3.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300 rounded-xl text-xs font-semibold flex items-center space-x-2">
-                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+              <div className="p-3.5 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-semibold flex items-center space-x-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>Task assigned successfully to {selectedEmails.length} target intern email(s)!</span>
               </div>
             )}
 
             {/* DOMAIN FILTER TABS */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">
+              <label className="block text-xs font-bold text-slate-700">
                 Step 1: Filter Interns by Domain Track
               </label>
               <div className="flex flex-wrap items-center gap-1.5">
@@ -439,14 +439,14 @@ export default function AdminView() {
                       onClick={() => setSelectedDomainFilter(dom)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
                         isActive
-                          ? "bg-blue-600 text-white shadow"
-                          : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700"
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                       }`}
                     >
                       <span>{dom}</span>
                       <span
                         className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                          isActive ? "bg-white text-blue-700" : "bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300"
+                          isActive ? "bg-white text-blue-700 font-bold" : "bg-slate-200 text-slate-700"
                         }`}
                       >
                         {count}
@@ -460,13 +460,13 @@ export default function AdminView() {
             {/* GMAIL-STYLE EMAIL CHIP TAG INPUT */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                <label className="text-xs font-bold text-slate-700">
                   Step 2: Selected Intern Emails ({selectedEmails.length} Tagged) *
                 </label>
                 <button
                   type="button"
                   onClick={selectAllInDomain}
-                  className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center space-x-1"
+                  className="text-[11px] font-bold text-blue-600 hover:underline flex items-center space-x-1"
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
                   <span>
@@ -477,14 +477,14 @@ export default function AdminView() {
                 </button>
               </div>
 
-              <div className="p-3 bg-gray-50 dark:bg-slate-800/80 border border-gray-300 dark:border-slate-700 rounded-2xl space-y-2 focus-within:ring-2 focus-within:ring-blue-600 transition">
+              <div className="p-3 bg-slate-50 border border-slate-300 rounded-2xl space-y-2 focus-within:ring-2 focus-within:ring-blue-600 transition">
                 <div className="flex flex-wrap items-center gap-1.5 max-h-36 overflow-y-auto">
                   {selectedEmails.map((email) => {
                     const internObj = registeredInterns.find((i) => i.email.toLowerCase() === email);
                     return (
                       <span
                         key={email}
-                        className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm"
+                        className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-xs"
                       >
                         <Mail className="w-3 h-3 text-blue-200" />
                         <span>{internObj ? `${internObj.name} (${email})` : email}</span>
@@ -509,7 +509,7 @@ export default function AdminView() {
                         ? "Type intern email and press Enter..."
                         : "Type more emails..."
                     }
-                    className="flex-1 min-w-[200px] bg-transparent text-xs text-gray-900 dark:text-white focus:outline-none py-1"
+                    className="flex-1 min-w-[200px] bg-transparent text-xs text-slate-900 focus:outline-none py-1 font-medium placeholder-slate-400"
                   />
                 </div>
               </div>
@@ -518,22 +518,22 @@ export default function AdminView() {
             {/* QUICK SELECTION CATALOG */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                <span className="text-xs font-bold text-slate-700">
                   Quick Pick Interns ({filteredInterns.length} available)
                 </span>
                 <div className="relative w-48">
-                  <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2 pointer-events-none" />
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2 pointer-events-none" />
                   <input
                     type="text"
                     value={emailSearchQuery}
                     onChange={(e) => setEmailSearchQuery(e.target.value)}
                     placeholder="Search intern..."
-                    className="w-full pl-8 pr-3 py-1 bg-gray-50 dark:bg-slate-800 border rounded-lg text-[11px]"
+                    className="w-full pl-8 pr-3 py-1 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 font-medium placeholder-slate-400"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 border rounded-xl bg-gray-50/50 dark:bg-slate-800/40">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 border border-slate-200 rounded-xl bg-slate-50">
                 {filteredInterns.slice(0, 20).map((intern) => {
                   const isSelected = selectedEmails.includes(intern.email.toLowerCase());
                   return (
@@ -542,13 +542,13 @@ export default function AdminView() {
                       onClick={() => toggleInternSelection(intern.email)}
                       className={`p-2 rounded-xl cursor-pointer border transition flex items-center justify-between text-xs ${
                         isSelected
-                          ? "bg-blue-100/80 dark:bg-blue-900/50 border-blue-400 text-blue-900 dark:text-blue-100 font-bold"
-                          : "bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 hover:border-blue-300"
+                          ? "bg-blue-50 border-blue-400 text-blue-900 font-bold"
+                          : "bg-white border-slate-200 hover:border-blue-300 text-slate-800"
                       }`}
                     >
                       <div className="truncate">
-                        <p className="font-bold truncate">{intern.name}</p>
-                        <p className="text-[10px] text-gray-400 truncate">{intern.email}</p>
+                        <p className="font-bold truncate text-slate-900">{intern.name}</p>
+                        <p className="text-[10px] text-slate-500 truncate">{intern.email}</p>
                       </div>
                       <input
                         type="checkbox"
@@ -565,7 +565,7 @@ export default function AdminView() {
             {/* FORM INPUTS */}
             <form onSubmit={handleAssignTaskMulti} className="space-y-4 text-xs pt-2">
               <div>
-                <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block font-bold text-slate-700 mb-1">
                   Task Title *
                 </label>
                 <input
@@ -574,12 +574,12 @@ export default function AdminView() {
                   value={assignTitle}
                   onChange={(e) => setAssignTitle(e.target.value)}
                   placeholder="e.g. Build Payment Gateway Webhook Integration & Unit Tests"
-                  className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl font-medium"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block font-bold text-slate-700 mb-1">
                   Task Instructions
                 </label>
                 <textarea
@@ -587,37 +587,37 @@ export default function AdminView() {
                   value={assignDescription}
                   onChange={(e) => setAssignDescription(e.target.value)}
                   placeholder="Detailed steps, API specs..."
-                  className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 />
               </div>
 
               {/* Document Attachment */}
-              <div className="p-3.5 bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-xl space-y-3">
-                <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300 font-bold">
+              <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
+                <div className="flex items-center space-x-2 text-blue-800 font-bold">
                   <Paperclip className="w-4 h-4 text-blue-600" />
                   <span>Attach Specification Document Link</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-[11px] mb-1">Document Title</label>
+                    <label className="block font-bold text-[11px] mb-1 text-slate-700">Document Title</label>
                     <input
                       type="text"
                       value={documentName}
                       onChange={(e) => setDocumentName(e.target.value)}
                       placeholder="e.g. PRD_Spec.pdf"
-                      className="w-full p-2 bg-white dark:bg-slate-900 border rounded-lg text-xs"
+                      className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-[11px] mb-1">Document URL</label>
+                    <label className="block font-bold text-[11px] mb-1 text-slate-700">Document URL</label>
                     <input
                       type="url"
                       value={documentUrl}
                       onChange={(e) => setDocumentUrl(e.target.value)}
                       placeholder="https://drive.google.com/..."
-                      className="w-full p-2 bg-white dark:bg-slate-900 border rounded-lg text-xs"
+                      className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-medium"
                     />
                   </div>
                 </div>
@@ -625,11 +625,11 @@ export default function AdminView() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                  <label className="block font-bold text-slate-700 mb-1">Priority</label>
                   <select
                     value={assignPriority}
                     onChange={(e) => setAssignPriority(e.target.value as any)}
-                    className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl font-medium"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900"
                   >
                     <option value="HIGH Priority">HIGH Priority</option>
                     <option value="MEDIUM Priority">MEDIUM Priority</option>
@@ -638,12 +638,12 @@ export default function AdminView() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                  <label className="block font-bold text-slate-700 mb-1">Due Date</label>
                   <input
                     type="date"
                     value={assignDueDate}
                     onChange={(e) => setAssignDueDate(e.target.value)}
-                    className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl font-medium"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900"
                   />
                 </div>
               </div>
@@ -651,7 +651,7 @@ export default function AdminView() {
               <button
                 type="submit"
                 disabled={selectedEmails.length === 0}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-lg transition flex items-center justify-center space-x-2"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center justify-center space-x-2"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Assign Task to {selectedEmails.length} Tagged Intern Email(s)</span>
@@ -660,21 +660,21 @@ export default function AdminView() {
           </div>
 
           {/* Assigned Tasks Summary Box */}
-          <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
-            <h4 className="font-bold text-sm text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-slate-800">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <h4 className="font-bold text-sm text-slate-900 pb-2 border-b border-slate-100">
               Recently Assigned Tasks ({tasks.length})
             </h4>
 
             <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
               {tasks.map((t) => (
-                <div key={t.id} className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl text-xs space-y-1">
-                  <div className="flex items-center justify-between font-bold text-gray-900 dark:text-white">
+                <div key={t.id} className="p-3 bg-slate-50 rounded-xl text-xs space-y-1 border border-slate-200">
+                  <div className="flex items-center justify-between font-bold text-slate-900">
                     <span className="truncate">{t.title}</span>
-                    <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded">
                       {t.status}
                     </span>
                   </div>
-                  <p className="text-gray-500 dark:text-gray-400 text-[11px]">
+                  <p className="text-slate-500 text-[11px]">
                     Assigned to: <strong>{t.assignedToName}</strong> ({t.assignedToEmail})
                   </p>
                 </div>
@@ -686,15 +686,15 @@ export default function AdminView() {
 
       {/* ================= SUB-TAB 2: ATTENDANCE & SELFIE MONITOR ================= */}
       {activeAdminSubTab === "attendance-monitor" && (
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-gray-900 dark:text-white text-base">Intern Attendance & Selfie Verification</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <h3 className="font-bold text-slate-900 text-base">Intern Attendance & Selfie Verification</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
                 Review check-in timestamps, status, and WebRTC selfie photos submitted by interns.
               </p>
             </div>
-            <span className="text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/60 px-3 py-1 rounded-full">
+            <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
               Date: Oct 06, 2026
             </span>
           </div>
@@ -702,7 +702,7 @@ export default function AdminView() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-slate-800 text-gray-400 uppercase text-[10px] tracking-wider">
+                <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px] tracking-wider bg-slate-50">
                   <th className="py-3 px-4">Intern Name & Email</th>
                   <th className="py-3 px-4">Date & Time</th>
                   <th className="py-3 px-4">Status</th>
@@ -710,12 +710,12 @@ export default function AdminView() {
                   <th className="py-3 px-4">IP Location</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-gray-700 dark:text-gray-300">
+              <tbody className="divide-y divide-slate-100 text-slate-800">
                 {attendanceHistory.map((att) => (
-                  <tr key={att.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40">
+                  <tr key={att.id} className="hover:bg-slate-50">
                     <td className="py-3.5 px-4">
-                      <p className="font-bold text-gray-900 dark:text-white">{att.internName}</p>
-                      <p className="text-[11px] text-gray-400">{att.internEmail}</p>
+                      <p className="font-bold text-slate-900">{att.internName}</p>
+                      <p className="text-[11px] text-slate-500">{att.internEmail}</p>
                     </td>
                     <td className="py-3.5 px-4 font-medium">
                       {att.date} {att.time ? `• ${att.time}` : ""}
@@ -724,8 +724,8 @@ export default function AdminView() {
                       <span
                         className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                           att.status === "Present"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
-                            : "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-red-50 text-red-700 border border-red-200"
                         }`}
                       >
                         {att.status}
@@ -741,10 +741,10 @@ export default function AdminView() {
                           <span>View Photo</span>
                         </button>
                       ) : (
-                        <span className="text-gray-400 text-[11px]">No Selfie</span>
+                        <span className="text-slate-400 text-[11px]">No Selfie</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-gray-400 text-[11px]">{att.ipAddress || "103.21.124.5"}</td>
+                    <td className="py-3.5 px-4 text-slate-500 text-[11px]">{att.ipAddress || "103.21.124.5"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -755,10 +755,10 @@ export default function AdminView() {
 
       {/* ================= SUB-TAB 3: LEAVE & WFH APPROVALS ================= */}
       {activeAdminSubTab === "leave-approvals" && (
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
           <div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-base">Leave & WFH Applications</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <h3 className="font-bold text-slate-900 text-base">Leave & WFH Applications</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
               Approve or reject intern leave requests. Approved leaves will not count as absent days.
             </p>
           </div>
@@ -767,22 +767,22 @@ export default function AdminView() {
             {leaveRequests.map((req) => (
               <div
                 key={req.id}
-                className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs"
+                className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs"
               >
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-gray-900 dark:text-white text-sm">{req.internName}</span>
-                    <span className="text-[11px] text-gray-400">({req.internEmail})</span>
-                    <span className="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 px-2 py-0.5 rounded font-semibold text-[10px]">
+                    <span className="font-bold text-slate-900 text-sm">{req.internName}</span>
+                    <span className="text-[11px] text-slate-500">({req.internEmail})</span>
+                    <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-semibold text-[10px]">
                       {req.type}
                     </span>
                   </div>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-slate-700">
                     Dates: <strong>{req.startDate}</strong> to <strong>{req.endDate}</strong>
                   </p>
-                  <p className="text-gray-500 dark:text-gray-400 italic">"Reason: {req.reason}"</p>
+                  <p className="text-slate-600 italic">"Reason: {req.reason}"</p>
                   {req.adminRemark && (
-                    <p className="text-blue-600 dark:text-blue-400 font-medium">Admin Remark: {req.adminRemark}</p>
+                    <p className="text-blue-600 font-medium">Admin Remark: {req.adminRemark}</p>
                   )}
                 </div>
 
@@ -791,7 +791,7 @@ export default function AdminView() {
                     <>
                       <button
                         onClick={() => updateLeaveStatus(req.id, "Approved", "Approved by Admin.")}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1 shadow"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1 shadow-xs transition"
                       >
                         <CheckCircle className="w-4 h-4" />
                         <span>Approve</span>
@@ -799,7 +799,7 @@ export default function AdminView() {
 
                       <button
                         onClick={() => updateLeaveStatus(req.id, "Rejected", "Rejected due to upcoming project milestone.")}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1 shadow"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1 shadow-xs transition"
                       >
                         <XCircle className="w-4 h-4" />
                         <span>Reject</span>
@@ -809,8 +809,8 @@ export default function AdminView() {
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-bold ${
                         req.status === "Approved"
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                          : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-red-50 text-red-700 border border-red-200"
                       }`}
                     >
                       {req.status}
@@ -825,10 +825,10 @@ export default function AdminView() {
 
       {/* ================= SUB-TAB 4: SUBMISSIONS EVALUATION & SCORING ================= */}
       {activeAdminSubTab === "submissions-grader" && (
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
           <div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-base">Project Submissions Grader</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <h3 className="font-bold text-slate-900 text-base">Project Submissions Grader</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
               Review Google Drive folder submissions, test datasets, assign score (0-100), and write code remarks.
             </p>
           </div>
@@ -837,22 +837,22 @@ export default function AdminView() {
             {submissions.map((sub) => (
               <div
                 key={sub.id}
-                className="p-5 bg-gray-50/70 dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 space-y-3 text-xs"
+                className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-xs"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 dark:border-slate-700 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
                   <div>
-                    <h4 className="font-bold text-sm text-gray-900 dark:text-white">{sub.projectTitle}</h4>
-                    <p className="text-gray-500 dark:text-gray-400 text-[11px]">
+                    <h4 className="font-bold text-sm text-slate-900">{sub.projectTitle}</h4>
+                    <p className="text-slate-500 text-[11px]">
                       Submitted by: <strong>{sub.internName}</strong> ({sub.internEmail}) • {sub.submittedAt}
                     </p>
                   </div>
                   <span
                     className={`px-3 py-1 rounded-full text-[11px] font-bold w-fit ${
                       sub.status === "Approved"
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                         : sub.status === "Needs Revision"
-                        ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
-                        : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+                        ? "bg-red-50 text-red-700 border border-red-200"
+                        : "bg-amber-50 text-amber-700 border border-amber-200"
                     }`}
                   >
                     {sub.status} {sub.score !== null && sub.score !== undefined ? `(${sub.score}/100)` : ""}
@@ -860,7 +860,7 @@ export default function AdminView() {
                 </div>
 
                 {/* Google Drive Link */}
-                <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 font-bold">
+                <div className="flex items-center space-x-2 text-blue-600 font-bold">
                   <ExternalLink className="w-4 h-4 shrink-0" />
                   <a href={sub.driveLink} target="_blank" rel="noreferrer" className="hover:underline truncate">
                     {sub.driveLink}
@@ -868,33 +868,33 @@ export default function AdminView() {
                 </div>
 
                 {sub.adminNote && (
-                  <p className="text-gray-600 dark:text-gray-300 italic bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-gray-100 dark:border-slate-800">
+                  <p className="text-slate-700 italic bg-white p-2.5 rounded-lg border border-slate-200">
                     "Intern Note: {sub.adminNote}"
                   </p>
                 )}
 
                 {/* Evaluation Form / Display */}
                 {evaluatingSubId === sub.id ? (
-                  <div className="mt-3 p-4 bg-white dark:bg-slate-900 rounded-xl border border-blue-300 dark:border-blue-800 space-y-3">
-                    <h5 className="font-bold text-gray-900 dark:text-white">Grade Submission</h5>
+                  <div className="mt-3 p-4 bg-white rounded-xl border border-blue-300 space-y-3 shadow-xs">
+                    <h5 className="font-bold text-slate-900">Grade Submission</h5>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">Score (0-100)</label>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Score (0-100)</label>
                         <input
                           type="number"
                           min={0}
                           max={100}
                           value={evalScore}
                           onChange={(e) => setEvalScore(Number(e.target.value))}
-                          className="w-full p-2 bg-gray-50 dark:bg-slate-800 border rounded-lg text-xs font-bold"
+                          className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">Evaluation Decision</label>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Evaluation Decision</label>
                         <select
                           value={evalStatus}
                           onChange={(e) => setEvalStatus(e.target.value as any)}
-                          className="w-full p-2 bg-gray-50 dark:bg-slate-800 border rounded-lg text-xs"
+                          className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-semibold"
                         >
                           <option value="Approved">Approved - Pass</option>
                           <option value="Needs Revision">Needs Revision</option>
@@ -903,24 +903,24 @@ export default function AdminView() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">Mentor Code Remarks & Feedback</label>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Mentor Code Remarks & Feedback</label>
                       <textarea
                         rows={2}
                         value={evalRemarks}
                         onChange={(e) => setEvalRemarks(e.target.value)}
                         placeholder="Excellent folder structure. Source code clean and documentation complete..."
-                        className="w-full p-2 bg-gray-50 dark:bg-slate-800 border rounded-lg text-xs"
+                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-medium placeholder-slate-400"
                       />
                     </div>
 
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleSaveEvaluation(sub.id)}
-                        className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-xs"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition"
                       >
                         Save Evaluation
                       </button>
-                      <button onClick={() => setEvaluatingSubId(null)} className="px-4 py-2 text-gray-400 text-xs">
+                      <button onClick={() => setEvaluatingSubId(null)} className="px-4 py-2 text-slate-500 font-medium text-xs hover:underline">
                         Cancel
                       </button>
                     </div>
@@ -928,11 +928,11 @@ export default function AdminView() {
                 ) : (
                   <div className="flex items-center justify-between pt-1">
                     {sub.mentorRemarks ? (
-                      <p className="text-gray-600 dark:text-gray-400 text-[11px]">
+                      <p className="text-slate-700 text-[11px]">
                         <strong>Mentor Remarks:</strong> {sub.mentorRemarks}
                       </p>
                     ) : (
-                      <span className="text-gray-400 text-[11px]">Not evaluated yet.</span>
+                      <span className="text-slate-400 text-[11px]">Not evaluated yet.</span>
                     )}
 
                     <button
@@ -941,7 +941,7 @@ export default function AdminView() {
                         setEvalScore(sub.score || 95);
                         setEvalRemarks(sub.mentorRemarks || "");
                       }}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg flex items-center space-x-1"
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg flex items-center space-x-1 shadow-xs transition"
                     >
                       <Award className="w-3.5 h-3.5" />
                       <span>{sub.status === "Awaiting Evaluation" ? "Evaluate & Score" : "Edit Score"}</span>
@@ -958,38 +958,38 @@ export default function AdminView() {
       {activeAdminSubTab === "calendar-manager" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Add Holiday Form */}
-          <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
-            <h3 className="font-bold text-gray-900 dark:text-white text-base">Add Company Calendar Event</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 className="font-bold text-slate-900 text-base border-b border-slate-100 pb-3">Add Company Calendar Event</h3>
 
             <form onSubmit={handleAddHoliday} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                <label className="block font-bold text-slate-700 mb-1">Date</label>
                 <input
                   type="date"
                   value={holidayDate}
                   onChange={(e) => setHolidayDate(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Title / Event Name</label>
+                <label className="block font-bold text-slate-700 mb-1">Title / Event Name</label>
                 <input
                   required
                   type="text"
                   value={holidayTitle}
                   onChange={(e) => setHolidayTitle(e.target.value)}
                   placeholder="e.g. Diwali Festival Public Holiday"
-                  className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium placeholder-slate-400"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Event Type</label>
+                <label className="block font-bold text-slate-700 mb-1">Event Type</label>
                 <select
                   value={holidayType}
                   onChange={(e) => setHolidayType(e.target.value as any)}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium"
                 >
                   <option value="Holiday">Company Holiday</option>
                   <option value="Flexible Workday">Flexible Workday</option>
@@ -997,7 +997,7 @@ export default function AdminView() {
                 </select>
               </div>
 
-              <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center space-x-1">
+              <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center space-x-1 shadow-xs transition">
                 <Plus className="w-4 h-4" />
                 <span>Add Event to Calendar</span>
               </button>
@@ -1005,17 +1005,17 @@ export default function AdminView() {
           </div>
 
           {/* Active Calendar Holidays List */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
-            <h3 className="font-bold text-gray-900 dark:text-white text-base">Active Workspace Calendar Events</h3>
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 className="font-bold text-slate-900 text-base border-b border-slate-100 pb-3">Active Workspace Calendar Events</h3>
 
             <div className="space-y-3">
               {holidays.map((h) => (
-                <div key={h.id} className="p-3.5 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                <div key={h.id} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
                   <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white">{h.title}</h4>
-                    <p className="text-gray-400 text-[11px]">Date: {h.date}</p>
+                    <h4 className="font-bold text-slate-900">{h.title}</h4>
+                    <p className="text-slate-500 font-medium text-[11px]">Date: {h.date}</p>
                   </div>
-                  <span className="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-bold px-2.5 py-1 rounded-full text-[10px]">
+                  <span className="bg-blue-50 text-blue-700 border border-blue-200 font-bold px-2.5 py-1 rounded-full text-[10px]">
                     {h.type}
                   </span>
                 </div>
@@ -1027,13 +1027,13 @@ export default function AdminView() {
 
       {/* Selfie Preview Modal */}
       {previewSelfieUrl && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl max-w-md w-full space-y-3 relative text-center">
-            <h4 className="font-bold text-gray-900 dark:text-white">Captured Check-in Selfie</h4>
-            <img src={previewSelfieUrl} alt="Selfie" className="w-full h-72 object-cover rounded-xl border" />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white p-4 rounded-2xl max-w-md w-full space-y-3 relative text-center shadow-2xl border border-slate-200">
+            <h4 className="font-bold text-slate-900">Captured Check-in Selfie</h4>
+            <img src={previewSelfieUrl} alt="Selfie" className="w-full h-72 object-cover rounded-xl border border-slate-200" />
             <button
               onClick={() => setPreviewSelfieUrl(null)}
-              className="px-4 py-2 bg-gray-200 dark:bg-slate-800 font-bold text-xs rounded-xl"
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition"
             >
               Close Preview
             </button>
