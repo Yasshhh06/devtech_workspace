@@ -421,14 +421,32 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setTasks: (tasks) => set({ tasks }),
 
       assignTaskToIntern: (taskData) => {
+        const taskObj: any = {
+          title: taskData.title.trim(),
+          description: taskData.description ? taskData.description.trim() : "",
+          assignedToEmail: taskData.assignedToEmail.toLowerCase().trim(),
+          assignedToName: taskData.assignedToName || "Intern",
+          domain: taskData.domain || "Full Stack Web Development",
+          status: taskData.status || "in progress",
+          priority: taskData.priority || "HIGH Priority",
+          dueDate: taskData.dueDate || new Date().toISOString().split("T")[0],
+        };
+
+        if (taskData.documentUrl && taskData.documentUrl.trim()) {
+          taskObj.documentUrl = taskData.documentUrl.trim();
+          taskObj.documentName = taskData.documentName || "Task_Specification_Document.pdf";
+        }
+
         const newTask: TaskItem = {
           id: `t-${Date.now()}`,
-          ...taskData,
+          ...taskObj,
         };
+
         set((state) => ({
           tasks: [newTask, ...state.tasks],
         }));
-        addDoc(collection(db, "tasks"), newTask).catch(err => console.error(err));
+
+        addDoc(collection(db, "tasks"), taskObj).catch(err => console.error("Error adding task to Firestore:", err));
         get().addAuditLog(`Assigned task "${taskData.title}" to ${taskData.assignedToEmail}`, "Task Management");
       },
 
@@ -449,22 +467,25 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             });
           }
 
-          const taskObj: TaskItem = {
-            id: `t-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            title,
-            description,
+          const taskObj: any = {
+            title: title.trim(),
+            description: description ? description.trim() : "",
             assignedToEmail: email.toLowerCase().trim(),
-            assignedToName: intern.name,
-            domain: intern.domain,
+            assignedToName: intern?.name || email.split("@")[0],
+            domain: intern?.domain || targetDomain || "Full Stack Web Development",
             status: "in progress",
-            priority,
-            dueDate,
-            documentUrl,
-            documentName: documentName || (documentUrl ? "Task_Specification_Document.pdf" : undefined),
+            priority: priority || "HIGH Priority",
+            dueDate: dueDate || new Date().toISOString().split("T")[0],
           };
 
-          addDoc(collection(db, "tasks"), taskObj).catch(err => console.error(err));
-          return taskObj;
+          if (documentUrl && documentUrl.trim()) {
+            taskObj.documentUrl = documentUrl.trim();
+            taskObj.documentName = documentName && documentName.trim() ? documentName.trim() : "Task_Specification_Document.pdf";
+          }
+
+          addDoc(collection(db, "tasks"), taskObj).catch(err => console.error("Error adding task to Firestore:", err));
+
+          return { id: `t-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, ...taskObj } as TaskItem;
         });
 
         set((prevState) => ({

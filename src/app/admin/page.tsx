@@ -185,10 +185,19 @@ export default function AdminPage() {
 
   const handleAssignTaskMulti = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assignTitle.trim() || selectedEmails.length === 0) return;
+    let currentEmails = [...selectedEmails];
+    
+    // Auto-add input email if typed but not Enter-key submitted
+    if (chipInputEmail.trim() && !currentEmails.includes(chipInputEmail.trim().toLowerCase())) {
+      currentEmails.push(chipInputEmail.trim().toLowerCase());
+      setSelectedEmails(currentEmails);
+      setChipInputEmail("");
+    }
+
+    if (!assignTitle.trim() || currentEmails.length === 0) return;
 
     assignTaskToMultipleInterns(
-      selectedEmails,
+      currentEmails,
       assignTitle,
       assignDescription,
       assignPriority,
@@ -754,11 +763,11 @@ export default function AdminPage() {
 
                 <button
                   type="submit"
-                  disabled={selectedEmails.length === 0}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2"
+                  disabled={selectedEmails.length === 0 && !chipInputEmail.trim()}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span>Assign Task to {selectedEmails.length} Tagged Intern Email(s)</span>
+                  <span>Assign Task to {selectedEmails.length || (chipInputEmail.trim() ? 1 : 0)} Tagged Intern Email(s)</span>
                 </button>
               </form>
             </div>
