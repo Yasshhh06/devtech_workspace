@@ -175,6 +175,7 @@ export default function AdminPage() {
   // --- 2. Add New Intern Form State ---
   const [newInternName, setNewInternName] = useState("");
   const [newInternEmail, setNewInternEmail] = useState("");
+  const [newInternPassword, setNewInternPassword] = useState("devtech123");
   const [newInternBatch, setNewInternBatch] = useState("DEV-2026-FS04");
   const [newInternDomain, setNewInternDomain] = useState("Full Stack Web Development");
   const [newInternCollege, setNewInternCollege] = useState("COEP Pune");
@@ -187,6 +188,7 @@ export default function AdminPage() {
     addNewIntern({
       name: newInternName,
       email: newInternEmail,
+      password: newInternPassword || "devtech123",
       batch: newInternBatch,
       domain: newInternDomain,
       college: newInternCollege,
@@ -195,6 +197,7 @@ export default function AdminPage() {
 
     setNewInternName("");
     setNewInternEmail("");
+    setNewInternPassword("devtech123");
     setInternCreatedSuccess(true);
     setTimeout(() => setInternCreatedSuccess(false), 4000);
   };
@@ -915,7 +918,7 @@ export default function AdminPage() {
               )}
 
               <form onSubmit={handleCreateIntern} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block font-bold mb-1">Intern Full Name *</label>
                     <input
@@ -937,6 +940,18 @@ export default function AdminPage() {
                       onChange={(e) => setNewInternEmail(e.target.value)}
                       placeholder="priya.sharma@college.edu"
                       className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold mb-1">Login Password *</label>
+                    <input
+                      required
+                      type="text"
+                      value={newInternPassword}
+                      onChange={(e) => setNewInternPassword(e.target.value)}
+                      placeholder="e.g. devtech123"
+                      className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border rounded-xl font-mono"
                     />
                   </div>
                 </div>

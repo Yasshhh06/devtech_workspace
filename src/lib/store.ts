@@ -252,6 +252,7 @@ const initialInternsList: InternUser[] = [
     id: "int-1",
     name: "Mohite Yash",
     email: "mohiteyash940@gmail.com",
+    password: "devtech123",
     batch: "DEV-2026-FS04",
     domain: "Full Stack Web Development",
     college: "COEP Pune",
@@ -288,9 +289,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         workspaceCount: 1,
       },
 
-      internLogin: (email) => {
-        const found = get().registeredInterns.find((i) => i.email.toLowerCase() === email.toLowerCase());
+      internLogin: (email, password) => {
+        const found = get().registeredInterns.find(
+          (i) => i.email.toLowerCase() === email.toLowerCase().trim()
+        );
         if (found) {
+          if (found.password && password && found.password !== password) {
+            return false;
+          }
           set({
             isInternLoggedIn: true,
             currentIntern: found,
@@ -523,7 +529,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       })),
     }),
     {
-      name: "devtech-workspace-store-v4",
+      name: "devtech-workspace-store-v5",
       storage: createJSONStorage(() => localStorage),
     }
   )
