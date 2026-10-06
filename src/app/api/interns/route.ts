@@ -4,8 +4,11 @@ import User from "@/models/User";
 
 export async function GET() {
   try {
-    await connectToDatabase();
-    
+    const conn = await connectToDatabase();
+    if (!conn) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
     // Fetch all registered interns from MongoDB
     let interns = await User.find({ role: "INTERN" }).sort({ createdAt: -1 });
 
@@ -32,7 +35,6 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    await connectToDatabase();
     const body = await req.json();
     const { name, email, password, domain } = body;
 
@@ -43,14 +45,21 @@ export async function POST(req: Request) {
       );
     }
 
+    const conn = await connectToDatabase();
+    if (!conn) {
+      return NextResponse.json(
+        { success: false, error: "Database connection unavailable. Please try again." },
+        { status: 503 }
+      );
+    }
+
     const cleanEmail = email.trim().toLowerCase();
 
     // Check if user already exists in MongoDB
     const existing = await User.findOne({ email: cleanEmail });
     if (existing) {
-      // Update password & details if user exists
-      existing.name = name;
-      existing.password = password;
+      existing.name = name.trim();
+      existing.password = password.trim();
       existing.domain = domain || existing.domain || "Full Stack Web Development";
       existing.role = "INTERN";
       await existing.save();

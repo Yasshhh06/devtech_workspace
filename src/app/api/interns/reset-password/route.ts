@@ -4,7 +4,6 @@ import User from "@/models/User";
 
 export async function PUT(req: Request) {
   try {
-    await connectToDatabase();
     const body = await req.json();
     const { email, newPassword } = body;
 
@@ -12,6 +11,14 @@ export async function PUT(req: Request) {
       return NextResponse.json(
         { success: false, error: "Email and New Password are required." },
         { status: 400 }
+      );
+    }
+
+    const conn = await connectToDatabase();
+    if (!conn) {
+      return NextResponse.json(
+        { success: false, error: "Database connection unavailable." },
+        { status: 503 }
       );
     }
 

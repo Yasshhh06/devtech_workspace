@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Key, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
+import { Mail, Key, ArrowRight, Loader2 } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function LoginPage() {
@@ -20,12 +20,23 @@ export default function LoginPage() {
     setErrorMsg("");
     setIsLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    // 1. First check local state for instant response
+    const localOk = internLogin(cleanEmail, cleanPassword);
+    if (localOk) {
+      router.push("/");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // 1. Authenticate directly against MongoDB API
+      // 2. Query MongoDB API backend
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password: password.trim() }),
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
       });
 
       const data = await res.json();
@@ -35,24 +46,23 @@ export default function LoginPage() {
         addNewIntern({
           name: data.data.name,
           email: data.data.email,
-          password: password.trim(),
+          password: cleanPassword,
           domain: data.data.domain || "Full Stack Web Development",
           batch: data.data.batch || "DEV-2026-FS04",
         });
 
-        const ok = internLogin(data.data.email, password.trim());
+        const ok = internLogin(data.data.email, cleanPassword);
         if (ok) {
           router.push("/");
           return;
         }
       } else {
-        // If MongoDB returns 401/error, show exact error
-        setErrorMsg(data.error || "Invalid Intern Email or Password! Please verify your login credentials or ask Admin to register your account.");
+        setErrorMsg("Invalid Intern Email or Password! Please verify your login credentials or ask Admin to register your account.");
       }
     } catch (err: any) {
-      console.warn("MongoDB API network connection issue, attempting local fallback check...", err);
-      // Local fallback check if offline
-      const ok = internLogin(email.trim(), password.trim());
+      console.warn("MongoDB API check exception:", err);
+      // Final fallback check
+      const ok = internLogin(cleanEmail, cleanPassword);
       if (ok) {
         router.push("/");
         return;
@@ -145,7 +155,7 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
-                <span>VERIFYING WITH MONGODB...</span>
+                <span>VERIFYING...</span>
               </>
             ) : (
               <>

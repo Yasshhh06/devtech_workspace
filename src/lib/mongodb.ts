@@ -1,15 +1,11 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "";
-
-if (!MONGODB_URI) {
-  // Graceful fallback for local development before MONGODB_URI env is added
-  console.warn("⚠️ MONGODB_URI environment variable is not defined. Local state will be used.");
-}
+const DEFAULT_URI = "mongodb+srv://mohiteyash940_db_user:Yash06042026@cluster0.psjkfim.mongodb.net/devtech_workspace?retryWrites=true&w=majority";
+const MONGODB_URI = process.env.MONGODB_URI || DEFAULT_URI;
 
 /**
- * Global is used here to maintain a cached connection across hot reloads in development.
- * This prevents connections growing exponentially during API Route execution.
+ * Global is used here to maintain a cached connection across hot reloads in development
+ * and Vercel serverless function invocations.
  */
 let cached = (global as any).mongoose;
 
@@ -18,30 +14,35 @@ if (!cached) {
 }
 
 export async function connectToDatabase() {
-  if (!MONGODB_URI) {
-    return null;
-  }
-
-  if (cached.conn) {
+  if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
   }
 
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5000, // Fail quickly after 5s if Atlas is unreachable
+      connectTimeoutMS: 5000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-      console.log("✅ Successfully connected to MongoDB Database!");
-      return mongooseInstance;
-    });
+    cached.promise = mongoose
+      .connect(MONGODB_URI, opts)
+      .then((mongooseInstance) => {
+        console.log("✅ Successfully connected to MongoDB Atlas Database!");
+        return mongooseInstance;
+      })
+      .catch((err) => {
+        console.error("❌ MongoDB connection error:", err.message);
+        cached.promise = null;
+        return null;
+      });
   }
 
   try {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
-    throw e;
+    return null;
   }
 
   return cached.conn;
