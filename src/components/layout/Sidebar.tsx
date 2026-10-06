@@ -6,7 +6,6 @@ import {
   FolderKanban,
   CalendarCheck,
   Calendar,
-  MessageSquareText,
   UserX,
   Send,
   FileText,
@@ -14,7 +13,6 @@ import {
   Settings,
   ChevronDown,
   Clock,
-  Layers,
   LogOut,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -44,17 +42,17 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-white dark:bg-slate-900 border-r border-blue-100 dark:border-slate-800 flex flex-col justify-between h-screen sticky top-0 text-sm overflow-y-auto shrink-0 select-none shadow-sm">
+    <aside className="w-64 bg-white border-r border-blue-100 flex flex-col justify-between h-screen sticky top-0 text-sm overflow-y-auto shrink-0 select-none shadow-sm">
       <div>
         {/* DevTech Company Logo Header */}
-        <div className="p-4 border-b border-blue-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <div className="p-4 border-b border-blue-100 bg-white">
           <img
             src="/devtech-logo.png"
             alt="DevTech IT Solution Pvt Ltd"
             className="h-10 w-auto object-contain mx-auto"
           />
           <div className="mt-2 text-center">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-300 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
               DevTech Workspace
             </span>
           </div>
@@ -70,11 +68,11 @@ export default function Sidebar() {
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-xs transition-all ${
                   isActive
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-semibold"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-gray-200"
+                    ? "bg-blue-50 text-blue-600 font-semibold"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
-                <span className={isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500"}>
+                <span className={isActive ? "text-blue-600" : "text-gray-500"}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
@@ -83,18 +81,18 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Accordion: My Tasks 16 */}
-        <div className="p-2 mt-2 border-t border-gray-100 dark:border-slate-800">
+        {/* Accordion: My Tasks */}
+        <div className="p-2 mt-2 border-t border-gray-100">
           <button
             onClick={() => setShowTasksAccordion(!showTasksAccordion)}
-            className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900"
           >
             <div className="flex items-center space-x-2">
               <span className="w-4 h-4 border border-gray-400 rounded flex items-center justify-center text-[10px]">
                 ✓
               </span>
               <span>My Tasks</span>
-              <span className="bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              <span className="bg-gray-100 text-gray-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                 {tasks.length}
               </span>
             </div>
@@ -106,7 +104,7 @@ export default function Sidebar() {
               {tasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-start space-x-2 px-2 py-1.5 text-[11px] text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded cursor-pointer transition"
+                  className="flex items-start space-x-2 px-2 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50 rounded cursor-pointer transition"
                 >
                   <span className="mt-1 shrink-0">
                     {task.status === "done" ? (
@@ -116,7 +114,7 @@ export default function Sidebar() {
                     )}
                   </span>
                   <div className="truncate">
-                    <p className="truncate text-gray-700 dark:text-gray-300 leading-snug">{task.title}</p>
+                    <p className="truncate text-gray-700 leading-snug">{task.title}</p>
                     <span className="text-[9px] text-gray-400">{task.status}</span>
                   </div>
                 </div>
@@ -127,14 +125,14 @@ export default function Sidebar() {
       </div>
 
       {/* Sidebar Footer */}
-      <div className="p-3 border-t border-gray-100 dark:border-slate-800 text-[11px] text-gray-400 flex items-center justify-between">
+      <div className="p-3 border-t border-gray-100 text-[11px] text-gray-400 flex items-center justify-between">
         <div className="flex items-center space-x-1.5">
           <Clock className="w-3.5 h-3.5 text-gray-400" />
           <span>Last updated 1 hr ago</span>
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center space-x-1 text-red-600 hover:text-red-700 dark:text-red-400 font-bold hover:underline transition"
+          className="flex items-center space-x-1 text-red-600 hover:text-red-700 font-bold hover:underline transition"
           title="Sign Out"
         >
           <LogOut className="w-3 h-3" />
