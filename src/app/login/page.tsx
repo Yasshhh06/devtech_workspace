@@ -2,27 +2,65 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Key, ArrowRight, ShieldCheck } from "lucide-react";
+import { Mail, Key, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { internLogin } = useWorkspaceStore();
+  const { internLogin, addNewIntern } = useWorkspaceStore();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+    setIsLoading(true);
 
-    const ok = internLogin(email, password);
-    if (ok) {
-      router.push("/");
-    } else {
-      setErrorMsg(`Invalid Intern Email or Password! Please verify your login credentials or ask Admin to register your account.`);
+    try {
+      // 1. Authenticate directly against MongoDB API
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password: password.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success && data.data) {
+        // Sync user to client state
+        addNewIntern({
+          name: data.data.name,
+          email: data.data.email,
+          password: password.trim(),
+          domain: data.data.domain || "Full Stack Web Development",
+          batch: data.data.batch || "DEV-2026-FS04",
+        });
+
+        const ok = internLogin(data.data.email, password.trim());
+        if (ok) {
+          router.push("/");
+          return;
+        }
+      } else {
+        // If MongoDB returns 401/error, show exact error
+        setErrorMsg(data.error || "Invalid Intern Email or Password! Please verify your login credentials or ask Admin to register your account.");
+      }
+    } catch (err: any) {
+      console.warn("MongoDB API network connection issue, attempting local fallback check...", err);
+      // Local fallback check if offline
+      const ok = internLogin(email.trim(), password.trim());
+      if (ok) {
+        router.push("/");
+        return;
+      } else {
+        setErrorMsg("Invalid Intern Email or Password! Please verify your login credentials or ask Admin to register your account.");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -43,7 +81,7 @@ export default function LoginPage() {
         </div>
 
         {errorMsg && (
-          <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-semibold text-center">
+          <div className="p-3.5 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-semibold text-center leading-relaxed">
             {errorMsg}
           </div>
         )}
@@ -101,10 +139,20 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center justify-center space-x-2"
+            disabled={isLoading}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center justify-center space-x-2"
           >
-            <span>SIGN IN TO INTERN PORTAL</span>
-            <ArrowRight className="w-4 h-4" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                <span>VERIFYING WITH MONGODB...</span>
+              </>
+            ) : (
+              <>
+                <span>SIGN IN TO INTERN PORTAL</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ShieldCheck,
   UserPlus,
@@ -30,8 +30,10 @@ import {
   Sparkles,
   FileSpreadsheet,
   Printer,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
-import { useWorkspaceStore } from "@/lib/store";
+import { useWorkspaceStore, InternUser } from "@/lib/store";
 import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
 
 export default function AdminPage() {
@@ -58,6 +60,46 @@ export default function AdminPage() {
   const [adminPass, setAdminPass] = useState("devtechadmin123");
   const [loginError, setLoginError] = useState(false);
 
+  // Sub Tab Navigation State
+  const [adminSubTab, setAdminSubTab] = useState<
+    "assign-task" | "add-intern" | "interns-list" | "attendance-monitor" | "leave-approvals" | "submissions-grader" | "calendar-manager" | "audit-logs"
+  >("assign-task");
+
+  // --- MongoDB Syncing State ---
+  const [isLoadingInterns, setIsLoadingInterns] = useState(false);
+  const [dbStatusMsg, setDbStatusMsg] = useState("");
+
+  const fetchInternsFromMongo = async () => {
+    setIsLoadingInterns(true);
+    try {
+      const res = await fetch("/api/interns");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        data.data.forEach((intern: any) => {
+          addNewIntern({
+            name: intern.name,
+            email: intern.email,
+            password: intern.password || "devtech123",
+            domain: intern.domain || "Full Stack Web Development",
+            batch: intern.batch || "DEV-2026-FS04",
+          });
+        });
+        setDbStatusMsg("Synced with MongoDB Atlas Database!");
+        setTimeout(() => setDbStatusMsg(""), 4000);
+      }
+    } catch (err) {
+      console.error("Failed to fetch interns from MongoDB:", err);
+    } finally {
+      setIsLoadingInterns(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAdminLoggedIn) {
+      fetchInternsFromMongo();
+    }
+  }, [isAdminLoggedIn]);
+
   const handleAdminAuth = (e: React.FormEvent) => {
     e.preventDefault();
     const success = adminLogin(adminUser, adminPass);
@@ -67,11 +109,6 @@ export default function AdminPage() {
       setLoginError(false);
     }
   };
-
-  // Sub Tab Navigation State
-  const [adminSubTab, setAdminSubTab] = useState<
-    "assign-task" | "add-intern" | "interns-list" | "attendance-monitor" | "leave-approvals" | "submissions-grader" | "calendar-manager" | "audit-logs"
-  >("assign-task");
 
   // --- 1. Domain Filter & Email Chip Task Assignment State ---
   const [selectedDomainFilter, setSelectedDomainFilter] = useState<string>("All Domains");
@@ -101,8 +138,7 @@ export default function AdminPage() {
     const matchesDomain = selectedDomainFilter === "All Domains" || intern.domain === selectedDomainFilter;
     const matchesSearch =
       intern.name.toLowerCase().includes(emailSearchQuery.toLowerCase()) ||
-      intern.email.toLowerCase().includes(emailSearchQuery.toLowerCase()) ||
-      intern.batch.toLowerCase().includes(emailSearchQuery.toLowerCase());
+      intern.email.toLowerCase().includes(emailSearchQuery.toLowerCase());
     return matchesDomain && matchesSearch;
   });
 
@@ -170,37 +206,116 @@ export default function AdminPage() {
     setTimeout(() => setTaskAssignSuccess(false), 4000);
   };
 
-  // --- 2. Add New Intern Form State ---
+  // --- 2. Add New Intern Form State (SIMPLIFIED: Full Name, Email, Password, Domain Track) ---
   const [newInternName, setNewInternName] = useState("");
   const [newInternEmail, setNewInternEmail] = useState("");
   const [newInternPassword, setNewInternPassword] = useState("devtech123");
-  const [newInternBatch, setNewInternBatch] = useState("DEV-2026-FS04");
   const [newInternDomain, setNewInternDomain] = useState("Full Stack Web Development");
-  const [newInternCollege, setNewInternCollege] = useState("COEP Pune");
+  const [isSubmittingIntern, setIsSubmittingIntern] = useState(false);
   const [internCreatedSuccess, setInternCreatedSuccess] = useState(false);
 
-  const handleCreateIntern = (e: React.FormEvent) => {
+  // --- 3. Password Reset State ---
+  const [resetModalEmail, setResetModalEmail] = useState<string | null>(null);
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetStatusMsg, setResetStatusMsg] = useState("");
+  const [isResettingPass, setIsResettingPass] = useState(false);
+
+  const handleCreateIntern = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newInternName.trim() || !newInternEmail.trim()) return;
+    if (!newInternName.trim() || !newInternEmail.trim() || !newInternPassword.trim()) return;
 
-    addNewIntern({
-      name: newInternName,
-      email: newInternEmail,
-      password: newInternPassword || "devtech123",
-      batch: newInternBatch,
-      domain: newInternDomain,
-      college: newInternCollege,
-      avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
-    });
+    setIsSubmittingIntern(true);
+    try {
+      // 1. Save to MongoDB Atlas DB
+      const res = await fetch("/api/interns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newInternName.trim(),
+          email: newInternEmail.trim(),
+          password: newInternPassword.trim(),
+          domain: newInternDomain,
+        }),
+      });
 
-    setNewInternName("");
-    setNewInternEmail("");
-    setNewInternPassword("devtech123");
-    setInternCreatedSuccess(true);
-    setTimeout(() => setInternCreatedSuccess(false), 4000);
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // 2. Add to client store
+        addNewIntern({
+          name: newInternName.trim(),
+          email: newInternEmail.trim().toLowerCase(),
+          password: newInternPassword.trim(),
+          domain: newInternDomain,
+          batch: "DEV-2026-FS04",
+        });
+
+        setNewInternName("");
+        setNewInternEmail("");
+        setNewInternPassword("devtech123");
+        setInternCreatedSuccess(true);
+        setTimeout(() => setInternCreatedSuccess(false), 5000);
+        fetchInternsFromMongo();
+      } else {
+        alert(`Failed to save to MongoDB: ${data.error || "Unknown error"}`);
+      }
+    } catch (err: any) {
+      console.error("Error creating intern:", err);
+      // Fallback local save
+      addNewIntern({
+        name: newInternName.trim(),
+        email: newInternEmail.trim().toLowerCase(),
+        password: newInternPassword.trim(),
+        domain: newInternDomain,
+        batch: "DEV-2026-FS04",
+      });
+      setInternCreatedSuccess(true);
+    } finally {
+      setIsSubmittingIntern(false);
+    }
   };
 
-  // --- 3. Submission Evaluation State ---
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetModalEmail || !resetNewPassword.trim()) return;
+
+    setIsResettingPass(true);
+    try {
+      const res = await fetch("/api/interns/reset-password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: resetModalEmail,
+          newPassword: resetNewPassword.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResetStatusMsg(`Password for ${resetModalEmail} updated to "${resetNewPassword.trim()}" in MongoDB!`);
+        addNewIntern({
+          name: resetModalEmail.split("@")[0],
+          email: resetModalEmail,
+          password: resetNewPassword.trim(),
+          domain: "Full Stack Web Development",
+          batch: "DEV-2026-FS04",
+        });
+        setTimeout(() => {
+          setResetModalEmail(null);
+          setResetNewPassword("");
+          setResetStatusMsg("");
+        }, 3000);
+      } else {
+        alert(data.error || "Failed to update password.");
+      }
+    } catch (err) {
+      console.error("Error resetting password:", err);
+    } finally {
+      setIsResettingPass(false);
+    }
+  };
+
+  // --- Submission Evaluation State ---
   const [evaluatingSubId, setEvaluatingSubId] = useState<string | null>(null);
   const [evalScore, setEvalScore] = useState<number>(95);
   const [evalStatus, setEvalStatus] = useState<"Approved" | "Needs Revision">("Approved");
@@ -212,7 +327,7 @@ export default function AdminPage() {
     setEvalRemarks("");
   };
 
-  // --- 4. Holiday Manager Form State ---
+  // --- Holiday Manager Form State ---
   const [holidayDate, setHolidayDate] = useState("2026-10-20");
   const [holidayTitle, setHolidayTitle] = useState("");
   const [holidayType, setHolidayType] = useState<"Holiday" | "Flexible Workday" | "Announcement">("Holiday");
@@ -227,7 +342,7 @@ export default function AdminPage() {
   // Selfie Modal Preview State
   const [previewSelfieUrl, setPreviewSelfieUrl] = useState<string | null>(null);
 
-  // --- MODULE SPECIFIC EXPORT HANDLERS ---
+  // --- EXPORT HANDLERS ---
   const exportTasksExcel = () => {
     const data = tasks.map((t) => ({
       Task_ID: t.id,
@@ -238,9 +353,8 @@ export default function AdminPage() {
       Priority: t.priority,
       Status: t.status,
       Due_Date: t.dueDate || "N/A",
-      Document_Attachment: t.documentName || t.documentUrl || "None",
     }));
-    exportToCSV("DevTech_Assigned_Tasks", data, ["Task_ID", "Task_Title", "Assigned_Intern_Email", "Status"]);
+    exportToCSV("DevTech_Assigned_Tasks", data);
   };
 
   const exportTasksPDF = () => {
@@ -255,17 +369,14 @@ export default function AdminPage() {
       Full_Name: i.name,
       Email_Address: i.email,
       Login_Password: i.password || "devtech123",
-      Batch_Code: i.batch,
       Domain_Track: i.domain,
-      College_University: i.college || "COEP Pune",
-      Assigned_Mentor: i.mentor || "Rahul Sharma",
     }));
-    exportToCSV("DevTech_Interns_Directory", data, ["Intern_ID", "Full_Name", "Email_Address", "Domain_Track"]);
+    exportToCSV("DevTech_Interns_Directory", data);
   };
 
   const exportInternsPDF = () => {
-    const headers = ["ID", "Full Name", "Email Address", "Batch", "Domain Track", "Mentor"];
-    const rows = registeredInterns.map((i) => [i.id, i.name, i.email, i.batch, i.domain, i.mentor || "Rahul Sharma"]);
+    const headers = ["ID", "Full Name", "Email Address", "Domain Track", "Password"];
+    const rows = registeredInterns.map((i) => [i.id, i.name, i.email, i.domain, i.password || "devtech123"]);
     exportToPDF("Registered Interns Directory", headers, rows);
   };
 
@@ -276,16 +387,14 @@ export default function AdminPage() {
       Date: a.date,
       Time: a.time || "09:15 AM",
       Status: a.status,
-      Selfie_Captured: a.selfieUrl ? "Yes (Verified)" : "No Photo",
-      IP_Location: a.ipAddress || "103.21.124.5",
     }));
-    exportToCSV("DevTech_Attendance_Logs", data, ["Intern_Name", "Intern_Email", "Date", "Status"]);
+    exportToCSV("DevTech_Attendance_Logs", data);
   };
 
   const exportAttendancePDF = () => {
-    const headers = ["Intern Name", "Email", "Date", "Check-in Time", "Status", "IP Address"];
-    const rows = attendanceHistory.map((a) => [a.internName, a.internEmail, a.date, a.time || "N/A", a.status, a.ipAddress || "103.21.124.5"]);
-    exportToPDF("Attendance & WebRTC Selfie Log Report", headers, rows);
+    const headers = ["Intern Name", "Email", "Date", "Check-in Time", "Status"];
+    const rows = attendanceHistory.map((a) => [a.internName, a.internEmail, a.date, a.time || "N/A", a.status]);
+    exportToPDF("Attendance Logs Report", headers, rows);
   };
 
   const exportSubmissionsExcel = () => {
@@ -297,71 +406,15 @@ export default function AdminPage() {
       Google_Drive_Folder_Link: s.driveLink,
       Submitted_At: s.submittedAt,
       Evaluation_Status: s.status,
-      Score_Assigned: s.score !== null && s.score !== undefined ? `${s.score}/100` : "Unrated",
-      Mentor_Remarks: s.mentorRemarks || "",
+      Score: s.score !== null ? `${s.score}/100` : "Unrated",
     }));
-    exportToCSV("DevTech_Project_Submissions_Grades", data, ["Submission_ID", "Intern_Name", "Project_Title", "Score_Assigned"]);
+    exportToCSV("DevTech_Project_Submissions_Grades", data);
   };
 
   const exportSubmissionsPDF = () => {
-    const headers = ["Intern Name", "Email", "Project Title", "Submitted At", "Status", "Score", "Mentor Remarks"];
-    const rows = submissions.map((s) => [s.internName, s.internEmail, s.projectTitle, s.submittedAt, s.status, `${s.score || "Unrated"}/100`, s.mentorRemarks || "-"]);
+    const headers = ["Intern Name", "Email", "Project Title", "Submitted At", "Status", "Score"];
+    const rows = submissions.map((s) => [s.internName, s.internEmail, s.projectTitle, s.submittedAt, s.status, `${s.score || "Unrated"}/100`]);
     exportToPDF("Project Submissions & Admin Grades Report", headers, rows);
-  };
-
-  const exportLeavesExcel = () => {
-    const data = leaveRequests.map((l) => ({
-      Request_ID: l.id,
-      Intern_Name: l.internName,
-      Intern_Email: l.internEmail,
-      Leave_Type: l.type,
-      Start_Date: l.startDate,
-      End_Date: l.endDate,
-      Reason: l.reason,
-      Status: l.status,
-      Admin_Remark: l.adminRemark || "",
-    }));
-    exportToCSV("DevTech_Leave_Applications", data, ["Request_ID", "Intern_Name", "Leave_Type", "Status"]);
-  };
-
-  const exportLeavesPDF = () => {
-    const headers = ["Intern Name", "Email", "Leave Type", "Start Date", "End Date", "Status"];
-    const rows = leaveRequests.map((l) => [l.internName, l.internEmail, l.type, l.startDate, l.endDate, l.status]);
-    exportToPDF("Leave & WFH Applications Report", headers, rows);
-  };
-
-  const exportCalendarExcel = () => {
-    const data = holidays.map((h) => ({
-      Event_ID: h.id,
-      Date: h.date,
-      Title: h.title,
-      Category: h.type,
-    }));
-    exportToCSV("DevTech_Workspace_Calendar", data, ["Event_ID", "Date", "Title", "Category"]);
-  };
-
-  const exportCalendarPDF = () => {
-    const headers = ["Date", "Event Title", "Category / Type"];
-    const rows = holidays.map((h) => [h.date, h.title, h.type]);
-    exportToPDF("Workspace Calendar & Events Report", headers, rows);
-  };
-
-  const exportAuditExcel = () => {
-    const data = auditLogs.map((log) => ({
-      Log_ID: log.id,
-      Timestamp: log.timestamp,
-      User: log.user,
-      Module: log.module,
-      Action: log.action,
-      IP_Address: log.ip,
-    }));
-    exportToCSV("DevTech_System_Audit_Logs", data, ["Log_ID", "Timestamp", "User", "Action"]);
-  };
-
-  const exportAuditPDF = () => {
-    const headers = ["Timestamp", "User", "Module", "Action Description", "IP Address"];
-    const rows = auditLogs.map((log) => [log.timestamp, log.user, log.module, log.action, log.ip]);
-    exportToPDF("System Activity Audit Log Report", headers, rows);
   };
 
   if (!isAdminLoggedIn) {
@@ -452,11 +505,29 @@ export default function AdminPage() {
           />
           <div className="border-l border-gray-200 pl-4">
             <h1 className="font-black text-gray-900 text-base leading-none">DevTech Admin Command Center</h1>
-            <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Super Admin Mode • workspace.devtechitsolution.com</span>
+            <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+              Super Admin Mode • MongoDB Persistent DB
+            </span>
           </div>
         </div>
 
         <div className="flex items-center space-x-3">
+          {dbStatusMsg && (
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+              {dbStatusMsg}
+            </span>
+          )}
+
+          <button
+            onClick={fetchInternsFromMongo}
+            disabled={isLoadingInterns}
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center space-x-1.5"
+            title="Sync latest intern accounts from MongoDB"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingInterns ? "animate-spin" : ""}`} />
+            <span>MongoDB Sync</span>
+          </button>
+
           <a
             href="/"
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold shadow transition flex items-center space-x-1.5"
@@ -584,7 +655,7 @@ export default function AdminPage() {
                 <div>
                   <h3 className="font-extrabold text-gray-900 text-lg flex items-center space-x-2">
                     <Sparkles className="w-5 h-5 text-blue-600" />
-                    <span>Assign Task to 50+ Multi-Domain Interns</span>
+                    <span>Assign Task to Multi-Domain Interns</span>
                   </h3>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Filter by domain, type or paste email addresses, tag multiple interns as chips, and attach specification documents!
@@ -595,7 +666,6 @@ export default function AdminPage() {
                   <button
                     onClick={exportTasksExcel}
                     className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                    title="Export Assigned Tasks to Excel / CSV"
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5" />
                     <span>Excel Export</span>
@@ -603,7 +673,6 @@ export default function AdminPage() {
                   <button
                     onClick={exportTasksPDF}
                     className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                    title="Export Assigned Tasks to PDF"
                   >
                     <Printer className="w-3.5 h-3.5" />
                     <span>PDF Export</span>
@@ -644,7 +713,7 @@ export default function AdminPage() {
                         <span>{dom}</span>
                         <span
                           className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                            isActive ? "bg-white text-blue-700" : "bg-gray-200 text-gray-700"
+                            isActive ? "bg-white text-blue-700 font-bold" : "bg-gray-200 text-gray-700"
                           }`}
                         >
                           {count}
@@ -704,7 +773,7 @@ export default function AdminPage() {
                       onKeyDown={handleChipKeyDown}
                       placeholder={
                         selectedEmails.length === 0
-                          ? "Type intern email and press Enter, or pick below..."
+                          ? "Type intern email and press Enter..."
                           : "Type more emails..."
                       }
                       className="flex-1 min-w-[200px] bg-transparent text-xs text-gray-900 focus:outline-none py-1 font-medium"
@@ -726,7 +795,7 @@ export default function AdminPage() {
                       value={emailSearchQuery}
                       onChange={(e) => setEmailSearchQuery(e.target.value)}
                       placeholder="Search intern..."
-                      className="w-full pl-8 pr-3 py-1 bg-gray-50 border rounded-lg text-[11px] font-medium"
+                      className="w-full pl-8 pr-3 py-1 bg-gray-50 border rounded-lg text-[11px] font-medium text-gray-900"
                     />
                   </div>
                 </div>
@@ -747,13 +816,12 @@ export default function AdminPage() {
                         <div className="truncate">
                           <p className="font-bold truncate text-gray-900">{intern.name}</p>
                           <p className="text-[10px] text-gray-400 truncate">{intern.email}</p>
-                          <span className="text-[9px] text-blue-600 font-semibold">{intern.domain}</span>
                         </div>
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => {}}
-                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 shrink-0 cursor-pointer"
+                          className="w-4 h-4 rounded text-blue-600 cursor-pointer"
                         />
                       </div>
                     );
@@ -764,9 +832,7 @@ export default function AdminPage() {
               {/* Task Form */}
               <form onSubmit={handleAssignTaskMulti} className="space-y-4 text-xs pt-2">
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">
-                    Task Title *
-                  </label>
+                  <label className="block font-bold text-gray-700 mb-1">Task Title *</label>
                   <input
                     required
                     type="text"
@@ -778,15 +844,13 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">
-                    Task Description & Instructions
-                  </label>
+                  <label className="block font-bold text-gray-700 mb-1">Task Instructions</label>
                   <textarea
                     rows={3}
                     value={assignDescription}
                     onChange={(e) => setAssignDescription(e.target.value)}
-                    placeholder="Detailed steps, API endpoint definitions, test coverage requirements..."
-                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900"
+                    placeholder="Detailed steps..."
+                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900"
                   />
                 </div>
 
@@ -799,27 +863,23 @@ export default function AdminPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-bold text-gray-700 mb-1 text-[11px]">
-                        Document Title
-                      </label>
+                      <label className="block font-bold text-gray-700 mb-1 text-[11px]">Document Title</label>
                       <input
                         type="text"
                         value={documentName}
                         onChange={(e) => setDocumentName(e.target.value)}
-                        placeholder="e.g. Payment_Gateway_PRD_Spec.pdf"
+                        placeholder="e.g. PRD_Spec.pdf"
                         className="w-full p-2 bg-white border rounded-lg text-xs font-medium"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-gray-700 mb-1 text-[11px]">
-                        Document URL / PDF Link
-                      </label>
+                      <label className="block font-bold text-gray-700 mb-1 text-[11px]">Document URL</label>
                       <input
                         type="url"
                         value={documentUrl}
                         onChange={(e) => setDocumentUrl(e.target.value)}
-                        placeholder="https://drive.google.com/file/d/..."
+                        placeholder="https://drive.google.com/..."
                         className="w-full p-2 bg-white border rounded-lg text-xs font-medium"
                       />
                     </div>
@@ -866,49 +926,30 @@ export default function AdminPage() {
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
               <h4 className="font-bold text-sm text-gray-900 pb-2 border-b flex items-center justify-between">
                 <span>Assigned Tasks & Specs</span>
-                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">{tasks.length}</span>
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-bold">{tasks.length}</span>
               </h4>
 
               <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1 text-xs">
-                {tasks.length === 0 ? (
-                  <div className="text-center py-6 text-gray-400 font-medium">No tasks created yet.</div>
-                ) : (
-                  tasks.map((t) => (
-                    <div key={t.id} className="p-3.5 bg-gray-50 rounded-xl space-y-1.5 border border-gray-100">
-                      <div className="flex items-center justify-between font-bold text-gray-900">
-                        <span className="truncate">{t.title}</span>
-                        <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-semibold">
-                          {t.priority}
-                        </span>
-                      </div>
-
-                      <p className="text-gray-500 text-[11px]">
-                        Assigned to: <strong>{t.assignedToName}</strong> ({t.assignedToEmail})
-                      </p>
-
-                      {t.documentUrl && (
-                        <div className="pt-1">
-                          <a
-                            href={t.documentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center space-x-1.5 text-blue-600 font-bold hover:underline text-[11px]"
-                          >
-                            <FileText className="w-3.5 h-3.5 text-blue-600" />
-                            <span>{t.documentName || "Task_Specification.pdf"}</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </div>
-                      )}
+                {tasks.map((t) => (
+                  <div key={t.id} className="p-3.5 bg-gray-50 rounded-xl space-y-1.5 border border-gray-100">
+                    <div className="flex items-center justify-between font-bold text-gray-900">
+                      <span className="truncate">{t.title}</span>
+                      <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-semibold">
+                        {t.priority}
+                      </span>
                     </div>
-                  ))
-                )}
+
+                    <p className="text-gray-500 text-[11px]">
+                      Assigned to: <strong>{t.assignedToName}</strong> ({t.assignedToEmail})
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* SUB-TAB 2: INTERNS DIRECTORY */}
+        {/* SUB-TAB 2: INTERNS DIRECTORY (WITH MONGODB PASSWORD RESET) */}
         {adminSubTab === "interns-list" && (
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
@@ -917,7 +958,7 @@ export default function AdminPage() {
                   DevTech Registered Intern Directory ({registeredInterns.length} Total Interns)
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Complete directory across all 6 domains. Filter by domain or search by name/email.
+                  Real-time list synced with MongoDB Atlas database (`devtech_workspace`).
                 </p>
               </div>
 
@@ -962,7 +1003,7 @@ export default function AdminPage() {
                   type="text"
                   value={emailSearchQuery}
                   onChange={(e) => setEmailSearchQuery(e.target.value)}
-                  placeholder="Search name, email, batch..."
+                  placeholder="Search name, email..."
                   className="w-full pl-9 pr-3 py-1.5 bg-white border rounded-lg text-xs font-medium text-gray-900"
                 />
               </div>
@@ -972,30 +1013,38 @@ export default function AdminPage() {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-gray-200 text-gray-400 uppercase text-[10px] tracking-wider">
-                    <th className="py-3 px-4">Intern ID & Name</th>
+                    <th className="py-3 px-4">Intern Name</th>
                     <th className="py-3 px-4">Email Address</th>
                     <th className="py-3 px-4">Domain Track</th>
-                    <th className="py-3 px-4">Batch</th>
-                    <th className="py-3 px-4">College</th>
-                    <th className="py-3 px-4">Mentor</th>
+                    <th className="py-3 px-4">Login Password</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-gray-700">
                   {filteredInterns.map((intern) => (
-                    <tr key={intern.id} className="hover:bg-gray-50">
-                      <td className="py-3.5 px-4 font-bold text-gray-900">
-                        {intern.name}
-                        <span className="block text-[10px] text-gray-400 font-normal">{intern.id}</span>
-                      </td>
+                    <tr key={intern.email} className="hover:bg-gray-50">
+                      <td className="py-3.5 px-4 font-bold text-gray-900">{intern.name}</td>
                       <td className="py-3.5 px-4 font-semibold text-blue-600">{intern.email}</td>
                       <td className="py-3.5 px-4">
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
                           {intern.domain}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 font-medium">{intern.batch}</td>
-                      <td className="py-3.5 px-4 text-gray-500">{intern.college || "Pune University"}</td>
-                      <td className="py-3.5 px-4 font-medium">{intern.mentor || "Rahul Sharma"}</td>
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-800">
+                        {intern.password || "devtech123"}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          onClick={() => {
+                            setResetModalEmail(intern.email);
+                            setResetNewPassword(intern.password || "devtech123");
+                          }}
+                          className="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold rounded-lg text-[11px] inline-flex items-center space-x-1 transition"
+                        >
+                          <Key className="w-3 h-3 text-amber-600" />
+                          <span>Change Password</span>
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1004,89 +1053,81 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* SUB-TAB 3: ADD NEW INTERN */}
+        {/* SUB-TAB 3: SIMPLIFIED ADD NEW INTERN ACCOUNT FORM */}
         {adminSubTab === "add-intern" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                 <div>
-                  <h3 className="font-bold text-gray-900 text-base">Add New Intern Account</h3>
+                  <h3 className="font-bold text-gray-900 text-base">Add New Intern Account (MongoDB Atlas Sync)</h3>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Register a new intern into DevTech Workspace with set Email & Password!
+                    Create a new intern account with Email & Password. Saved directly to MongoDB database!
                   </p>
-                </div>
-
-                <div className="flex items-center space-x-2 shrink-0">
-                  <button
-                    onClick={exportInternsExcel}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    <span>Excel Export</span>
-                  </button>
-                  <button
-                    onClick={exportInternsPDF}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>PDF Export</span>
-                  </button>
                 </div>
               </div>
 
               {internCreatedSuccess && (
                 <div className="p-3.5 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-semibold flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>New intern account registered successfully! They can now log in with set credentials.</span>
+                  <span>
+                    New intern account registered in MongoDB Atlas! Mobile phone & laptop can both log in immediately with these credentials.
+                  </span>
                 </div>
               )}
 
+              {/* SIMPLIFIED FORM AS REQUESTED BY USER */}
               <form onSubmit={handleCreateIntern} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-gray-700 mb-1">Intern Full Name *</label>
+                    <label className="block font-bold text-gray-700 mb-1">
+                      Intern Full Name <span className="text-red-500">*</span>
+                    </label>
                     <input
                       required
                       type="text"
                       value={newInternName}
                       onChange={(e) => setNewInternName(e.target.value)}
-                      placeholder="e.g. Priya Sharma"
-                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-900"
+                      placeholder="e.g. Rahul Patil"
+                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-gray-700 mb-1">Intern Email Address *</label>
+                    <label className="block font-bold text-gray-700 mb-1">
+                      Intern Email Address <span className="text-red-500">*</span>
+                    </label>
                     <input
                       required
                       type="email"
                       value={newInternEmail}
                       onChange={(e) => setNewInternEmail(e.target.value)}
-                      placeholder="priya.sharma@college.edu"
-                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-gray-700 mb-1">Login Password *</label>
-                    <input
-                      required
-                      type="text"
-                      value={newInternPassword}
-                      onChange={(e) => setNewInternPassword(e.target.value)}
-                      placeholder="e.g. devtech123"
-                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl font-mono text-gray-900"
+                      placeholder="rahul.patil@devtechitsolution.com"
+                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
+                    <label className="block font-bold text-gray-700 mb-1">
+                      Login Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={newInternPassword}
+                      onChange={(e) => setNewInternPassword(e.target.value)}
+                      placeholder="e.g. devtech123"
+                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl font-mono text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+
+                  <div>
                     <label className="block font-bold text-gray-700 mb-1">Domain Track</label>
                     <select
                       value={newInternDomain}
                       onChange={(e) => setNewInternDomain(e.target.value)}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-900"
+                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     >
                       <option value="Full Stack Web Development">Full Stack Web Development</option>
                       <option value="Python & AI/ML">Python & AI/ML</option>
@@ -1096,39 +1137,46 @@ export default function AdminPage() {
                       <option value="UI/UX Design">UI/UX Design</option>
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block font-bold text-gray-700 mb-1">Batch Code</label>
-                    <input
-                      type="text"
-                      value={newInternBatch}
-                      onChange={(e) => setNewInternBatch(e.target.value)}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-900"
-                    />
-                  </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-md transition flex items-center justify-center space-x-2"
+                  disabled={isSubmittingIntern}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold rounded-xl shadow-md transition flex items-center justify-center space-x-2"
                 >
-                  <UserPlus className="w-4 h-4" />
-                  <span>Create & Register Intern Account</span>
+                  {isSubmittingIntern ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>SAVING TO MONGODB ATLAS...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      <span>CREATE & REGISTER INTERN ACCOUNT IN MONGODB</span>
+                    </>
+                  )}
                 </button>
               </form>
             </div>
 
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-              <h4 className="font-bold text-sm text-gray-900 border-b pb-2">Registered Accounts</h4>
+              <h4 className="font-bold text-sm text-gray-900 border-b pb-2 flex items-center justify-between">
+                <span>MongoDB Registered Accounts</span>
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-bold">
+                  {registeredInterns.length}
+                </span>
+              </h4>
               <div className="space-y-3 max-h-[380px] overflow-y-auto text-xs">
                 {registeredInterns.map((intern) => (
-                  <div key={intern.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div key={intern.email} className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-0.5">
                     <div className="flex items-center justify-between font-bold">
                       <span className="text-gray-900">{intern.name}</span>
-                      <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded">{intern.batch}</span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                        MongoDB
+                      </span>
                     </div>
                     <p className="text-gray-500 text-[11px] truncate">{intern.email}</p>
-                    <p className="text-[10px] font-semibold text-blue-600">{intern.domain}</p>
+                    <p className="text-[10px] font-mono text-slate-700">Password: {intern.password || "devtech123"}</p>
                   </div>
                 ))}
               </div>
@@ -1139,29 +1187,12 @@ export default function AdminPage() {
         {/* SUB-TAB 4: ATTENDANCE */}
         {adminSubTab === "attendance-monitor" && (
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
                 <h3 className="font-bold text-gray-900 text-base">Attendance & Selfie Photo Monitor</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
                   Review check-in timestamps, status, and WebRTC photo selfies captured by interns.
                 </p>
-              </div>
-
-              <div className="flex items-center space-x-2 shrink-0">
-                <button
-                  onClick={exportAttendanceExcel}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Excel Export</span>
-                </button>
-                <button
-                  onClick={exportAttendancePDF}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>PDF Export</span>
-                </button>
               </div>
             </div>
 
@@ -1174,44 +1205,34 @@ export default function AdminPage() {
                     <th className="py-3 px-4">Date & Time</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Captured Selfie</th>
-                    <th className="py-3 px-4">IP Location</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-gray-700">
-                  {attendanceHistory.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-gray-400 font-medium">
-                        No attendance records logged yet today.
+                  {attendanceHistory.map((att) => (
+                    <tr key={att.id} className="hover:bg-gray-50">
+                      <td className="py-3.5 px-4">
+                        <p className="font-bold text-gray-900">{att.internName}</p>
+                        <p className="text-[11px] text-gray-400">{att.internEmail}</p>
+                      </td>
+                      <td className="py-3.5 px-4 font-semibold text-blue-600">{att.domain || "Full Stack Web Development"}</td>
+                      <td className="py-3.5 px-4 font-medium">{att.date} {att.time ? `• ${att.time}` : ""}</td>
+                      <td className="py-3.5 px-4">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${att.status === "Present" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                          {att.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {att.selfieUrl ? (
+                          <button onClick={() => setPreviewSelfieUrl(att.selfieUrl!)} className="flex items-center space-x-1.5 text-blue-600 hover:underline font-semibold">
+                            <img src={att.selfieUrl} alt="Selfie" className="w-8 h-8 rounded-full object-cover border border-blue-400" />
+                            <span>View Photo</span>
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 text-[11px]">No Selfie</span>
+                        )}
                       </td>
                     </tr>
-                  ) : (
-                    attendanceHistory.map((att) => (
-                      <tr key={att.id} className="hover:bg-gray-50">
-                        <td className="py-3.5 px-4">
-                          <p className="font-bold text-gray-900">{att.internName}</p>
-                          <p className="text-[11px] text-gray-400">{att.internEmail}</p>
-                        </td>
-                        <td className="py-3.5 px-4 font-semibold text-blue-600">{att.domain || "Full Stack Web Development"}</td>
-                        <td className="py-3.5 px-4 font-medium">{att.date} {att.time ? `• ${att.time}` : ""}</td>
-                        <td className="py-3.5 px-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${att.status === "Present" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
-                            {att.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          {att.selfieUrl ? (
-                            <button onClick={() => setPreviewSelfieUrl(att.selfieUrl!)} className="flex items-center space-x-1.5 text-blue-600 hover:underline font-semibold">
-                              <img src={att.selfieUrl} alt="Selfie" className="w-8 h-8 rounded-full object-cover border border-blue-400" />
-                              <span>View Photo</span>
-                            </button>
-                          ) : (
-                            <span className="text-gray-400 text-[11px]">No Selfie</span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 text-gray-400 text-[11px]">{att.ipAddress || "103.21.124.5"}</td>
-                      </tr>
-                    ))
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -1221,94 +1242,34 @@ export default function AdminPage() {
         {/* SUB-TAB 5: SUBMISSIONS GRADER */}
         {adminSubTab === "submissions-grader" && (
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
                 <h3 className="font-bold text-gray-900 text-base">Project Submissions Grader</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
                   Review Google Drive folder submissions, assign score (0-100), and write code review remarks.
                 </p>
               </div>
-
-              <div className="flex items-center space-x-2 shrink-0">
-                <button
-                  onClick={exportSubmissionsExcel}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Excel Export</span>
-                </button>
-                <button
-                  onClick={exportSubmissionsPDF}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>PDF Export</span>
-                </button>
-              </div>
             </div>
 
             <div className="space-y-4">
-              {submissions.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 font-medium text-xs">
-                  No project submissions received yet.
-                </div>
-              ) : (
-                submissions.map((sub) => (
-                  <div key={sub.id} className="p-5 bg-gray-50 rounded-2xl border border-gray-200 space-y-3 text-xs">
-                    <div className="flex flex-col sm:flex-row justify-between gap-2 border-b border-gray-200 pb-3">
-                      <div>
-                        <h4 className="font-bold text-sm text-gray-900">{sub.projectTitle}</h4>
-                        <p className="text-gray-500 text-[11px]">Submitted by: <strong>{sub.internName}</strong> ({sub.internEmail}) • {sub.submittedAt}</p>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 w-fit">
-                        {sub.status} {sub.score !== null ? `(${sub.score}/100)` : ""}
-                      </span>
+              {submissions.map((sub) => (
+                <div key={sub.id} className="p-5 bg-gray-50 rounded-2xl border border-gray-200 space-y-3 text-xs">
+                  <div className="flex justify-between gap-2 border-b border-gray-200 pb-3">
+                    <div>
+                      <h4 className="font-bold text-sm text-gray-900">{sub.projectTitle}</h4>
+                      <p className="text-gray-500 text-[11px]">Submitted by: <strong>{sub.internName}</strong> ({sub.internEmail}) • {sub.submittedAt}</p>
                     </div>
-
-                    <div className="flex items-center space-x-2 text-blue-600 font-bold">
-                      <ExternalLink className="w-4 h-4 shrink-0" />
-                      <a href={sub.driveLink} target="_blank" rel="noreferrer" className="hover:underline truncate">{sub.driveLink}</a>
-                    </div>
-
-                    {evaluatingSubId === sub.id ? (
-                      <div className="mt-3 p-4 bg-white rounded-xl border border-gray-200 space-y-3">
-                        <h5 className="font-bold text-gray-900">Grade Submission</h5>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[11px] font-bold mb-1 text-gray-700">Score (0-100)</label>
-                            <input type="number" min={0} max={100} value={evalScore} onChange={(e) => setEvalScore(Number(e.target.value))} className="w-full p-2 bg-gray-50 border rounded-lg text-xs font-bold text-gray-900" />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-bold mb-1 text-gray-700">Decision</label>
-                            <select value={evalStatus} onChange={(e) => setEvalStatus(e.target.value as any)} className="w-full p-2 bg-gray-50 border rounded-lg text-xs font-semibold text-gray-900">
-                              <option value="Approved">Approved - Pass</option>
-                              <option value="Needs Revision">Needs Revision</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold mb-1 text-gray-700">Mentor Remarks</label>
-                          <textarea rows={2} value={evalRemarks} onChange={(e) => setEvalRemarks(e.target.value)} placeholder="Code review notes..." className="w-full p-2 bg-gray-50 border rounded-lg text-xs text-gray-900" />
-                        </div>
-
-                        <div className="flex space-x-2">
-                          <button onClick={() => handleSaveEvaluation(sub.id)} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-xs shadow-xs">Save Grade</button>
-                          <button onClick={() => setEvaluatingSubId(null)} className="px-4 py-2 text-gray-500 font-semibold text-xs">Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between pt-1">
-                        <p className="text-gray-600 text-[11px]"><strong>Mentor Remarks:</strong> {sub.mentorRemarks || "Not evaluated yet."}</p>
-                        <button onClick={() => { setEvaluatingSubId(sub.id); setEvalScore(sub.score || 95); setEvalRemarks(sub.mentorRemarks || ""); }} className="px-3 py-1.5 bg-blue-600 text-white font-bold text-xs rounded-lg flex items-center space-x-1 shadow-xs">
-                          <Award className="w-3.5 h-3.5" />
-                          <span>Evaluate & Score</span>
-                        </button>
-                      </div>
-                    )}
+                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 w-fit">
+                      {sub.status} {sub.score !== null ? `(${sub.score}/100)` : ""}
+                    </span>
                   </div>
-                ))
-              )}
+
+                  <div className="flex items-center space-x-2 text-blue-600 font-bold">
+                    <ExternalLink className="w-4 h-4 shrink-0" />
+                    <a href={sub.driveLink} target="_blank" rel="noreferrer" className="hover:underline truncate">{sub.driveLink}</a>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -1316,56 +1277,31 @@ export default function AdminPage() {
         {/* SUB-TAB 6: LEAVE APPROVALS */}
         {adminSubTab === "leave-approvals" && (
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
-              <div>
-                <h3 className="font-bold text-gray-900 text-base">Leave & WFH Applications</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Approve or reject intern leave requests.</p>
-              </div>
-
-              <div className="flex items-center space-x-2 shrink-0">
-                <button
-                  onClick={exportLeavesExcel}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Excel Export</span>
-                </button>
-                <button
-                  onClick={exportLeavesPDF}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>PDF Export</span>
-                </button>
-              </div>
+            <div className="pb-3 border-b border-gray-100">
+              <h3 className="font-bold text-gray-900 text-base">Leave & WFH Applications</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Approve or reject intern leave requests.</p>
             </div>
 
             <div className="space-y-4">
-              {leaveRequests.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 font-medium text-xs">
-                  No leave requests submitted yet.
-                </div>
-              ) : (
-                leaveRequests.map((req) => (
-                  <div key={req.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
-                    <div>
-                      <span className="font-bold text-sm text-gray-900">{req.internName}</span> ({req.internEmail})
-                      <p className="text-gray-600 mt-1">Dates: <strong>{req.startDate}</strong> to <strong>{req.endDate}</strong></p>
-                      <p className="text-gray-500 italic">"Reason: {req.reason}"</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      {req.status === "Pending" ? (
-                        <>
-                          <button onClick={() => updateLeaveStatus(req.id, "Approved", "Approved by Admin.")} className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-xs">Approve</button>
-                          <button onClick={() => updateLeaveStatus(req.id, "Rejected", "Rejected.")} className="px-4 py-2 bg-red-600 text-white font-bold text-xs rounded-xl shadow-xs">Reject</button>
-                        </>
-                      ) : (
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">{req.status}</span>
-                      )}
-                    </div>
+              {leaveRequests.map((req) => (
+                <div key={req.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-200 flex justify-between items-center gap-4 text-xs">
+                  <div>
+                    <span className="font-bold text-sm text-gray-900">{req.internName}</span> ({req.internEmail})
+                    <p className="text-gray-600 mt-1">Dates: <strong>{req.startDate}</strong> to <strong>{req.endDate}</strong></p>
+                    <p className="text-gray-500 italic">"Reason: {req.reason}"</p>
                   </div>
-                ))
-              )}
+                  <div className="flex space-x-2">
+                    {req.status === "Pending" ? (
+                      <>
+                        <button onClick={() => updateLeaveStatus(req.id, "Approved", "Approved by Admin.")} className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-xs">Approve</button>
+                        <button onClick={() => updateLeaveStatus(req.id, "Rejected", "Rejected.")} className="px-4 py-2 bg-red-600 text-white font-bold text-xs rounded-xl shadow-xs">Reject</button>
+                      </>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">{req.status}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -1384,14 +1320,6 @@ export default function AdminPage() {
                   <label className="block font-bold mb-1 text-gray-700">Title</label>
                   <input required type="text" value={holidayTitle} onChange={(e) => setHolidayTitle(e.target.value)} placeholder="Event title..." className="w-full p-2.5 bg-gray-50 border rounded-xl font-medium text-gray-900" />
                 </div>
-                <div>
-                  <label className="block font-bold mb-1 text-gray-700">Event Type</label>
-                  <select value={holidayType} onChange={(e) => setHolidayType(e.target.value as any)} className="w-full p-2.5 bg-gray-50 border rounded-xl font-medium text-gray-900">
-                    <option value="Holiday">Company Holiday</option>
-                    <option value="Flexible Workday">Flexible Workday</option>
-                    <option value="Announcement">Announcement</option>
-                  </select>
-                </div>
                 <button type="submit" className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl flex items-center justify-center space-x-1 shadow-xs">
                   <Plus className="w-4 h-4" />
                   <span>Add Event</span>
@@ -1400,108 +1328,87 @@ export default function AdminPage() {
             </div>
 
             <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
-                <h3 className="font-bold text-base text-gray-900">Active Workspace Calendar Events</h3>
-                <div className="flex items-center space-x-2 shrink-0">
+              <h3 className="font-bold text-base text-gray-900 border-b pb-3">Active Calendar Events</h3>
+              <div className="space-y-3">
+                {holidays.map((h) => (
+                  <div key={h.id} className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between text-xs">
+                    <div>
+                      <h4 className="font-bold text-gray-900">{h.title}</h4>
+                      <p className="text-gray-400">Date: {h.date}</p>
+                    </div>
+                    <span className="bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-full text-[10px]">{h.type}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* RESET PASSWORD MODAL */}
+        {resetModalEmail && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center space-x-2 text-slate-900 font-extrabold text-sm">
+                  <Key className="w-4 h-4 text-amber-600" />
+                  <span>Reset Intern Password (MongoDB)</span>
+                </div>
+                <button onClick={() => setResetModalEmail(null)} className="p-1 text-slate-400 hover:text-slate-700">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {resetStatusMsg && (
+                <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-semibold">
+                  {resetStatusMsg}
+                </div>
+              )}
+
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Target Intern Email</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={resetModalEmail}
+                    className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-700 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">New Login Password *</label>
+                  <input
+                    required
+                    type="text"
+                    value={resetNewPassword}
+                    onChange={(e) => setResetNewPassword(e.target.value)}
+                    placeholder="Enter new password (e.g. devtech2026)"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end space-x-2 pt-2">
                   <button
-                    onClick={exportCalendarExcel}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
+                    type="button"
+                    onClick={() => setResetModalEmail(null)}
+                    className="px-4 py-2 border border-slate-300 font-bold text-slate-700 rounded-xl"
                   >
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    <span>Excel Export</span>
+                    Cancel
                   </button>
                   <button
-                    onClick={exportCalendarPDF}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
+                    type="submit"
+                    disabled={isResettingPass}
+                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-xs flex items-center space-x-1.5"
                   >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>PDF Export</span>
+                    {isResettingPass ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <Key className="w-4 h-4 text-white" />
+                    )}
+                    <span>Update Password in MongoDB</span>
                   </button>
                 </div>
-              </div>
-
-              <div className="space-y-3">
-                {holidays.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-gray-400 font-medium">No calendar events added.</div>
-                ) : (
-                  holidays.map((h) => (
-                    <div key={h.id} className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between text-xs">
-                      <div>
-                        <h4 className="font-bold text-gray-900">{h.title}</h4>
-                        <p className="text-gray-400">Date: {h.date}</p>
-                      </div>
-                      <span className="bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-full text-[10px]">{h.type}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* SUB-TAB 8: AUDIT LOGS */}
-        {adminSubTab === "audit-logs" && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
-              <h3 className="font-bold text-base text-gray-900">System Audit Activity Logs</h3>
-              <div className="flex items-center space-x-2 shrink-0">
-                <button
-                  onClick={exportAuditExcel}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Excel Export</span>
-                </button>
-                <button
-                  onClick={exportAuditPDF}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>PDF Export</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-200 text-gray-400 text-[10px] uppercase">
-                    <th className="py-2.5 px-3">Timestamp</th>
-                    <th className="py-2.5 px-3">User</th>
-                    <th className="py-2.5 px-3">Module</th>
-                    <th className="py-2.5 px-3">Action Description</th>
-                    <th className="py-2.5 px-3">IP Address</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-gray-700">
-                  {auditLogs.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-6 text-center text-gray-400 font-medium">No audit activity logged.</td>
-                    </tr>
-                  ) : (
-                    auditLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-gray-50">
-                        <td className="py-2.5 px-3 text-gray-400">{log.timestamp}</td>
-                        <td className="py-2.5 px-3 font-bold text-gray-900">{log.user}</td>
-                        <td className="py-2.5 px-3 font-semibold text-blue-600">{log.module}</td>
-                        <td className="py-2.5 px-3">{log.action}</td>
-                        <td className="py-2.5 px-3 text-gray-400">{log.ip}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Selfie Modal */}
-        {previewSelfieUrl && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-            <div className="bg-white p-5 rounded-2xl max-w-md w-full space-y-3 text-center shadow-2xl">
-              <h4 className="font-bold text-gray-900">Captured Check-in Selfie</h4>
-              <img src={previewSelfieUrl} alt="Selfie" className="w-full h-72 object-cover rounded-xl border border-gray-200" />
-              <button onClick={() => setPreviewSelfieUrl(null)} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition">Close Preview</button>
+              </form>
             </div>
           </div>
         )}
