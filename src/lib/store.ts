@@ -692,8 +692,16 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       },
     }),
     {
-      name: "devtech-workspace-store-v6",
+      name: "devtech-workspace-store-v8",
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        isAdminLoggedIn: state.isAdminLoggedIn,
+        isInternLoggedIn: state.isInternLoggedIn,
+        currentIntern: state.currentIntern,
+        currentUser: state.currentUser,
+        activeRole: state.activeRole,
+        activeTab: state.activeTab,
+      }),
     }
   )
 );
