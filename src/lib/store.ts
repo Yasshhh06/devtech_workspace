@@ -506,14 +506,20 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           internEmail,
           projectTitle,
           driveLink,
-          adminNote,
+          adminNote: adminNote || "",
           submittedAt: new Date().toLocaleString(),
           status: "Awaiting Evaluation",
         };
         set((state) => ({
           submissions: [subRecord, ...state.submissions],
         }));
-        addDoc(collection(db, "submissions"), subRecord).catch(err => console.error(err));
+
+        const payload: any = { ...subRecord };
+        Object.keys(payload).forEach((k) => {
+          if (payload[k] === undefined) delete payload[k];
+        });
+
+        addDoc(collection(db, "submissions"), payload).catch(err => console.error("Error saving submission to Firestore:", err));
         get().addAuditLog(`Submitted project "${projectTitle}"`, "Submissions");
       },
 
@@ -523,6 +529,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             sub.id === id ? { ...sub, score, status, mentorRemarks: remarks } : sub
           ),
         }));
+
+        updateDoc(doc(db, "submissions", id), {
+          score,
+          status,
+          mentorRemarks: remarks || "",
+          updatedAt: new Date().toISOString(),
+        }).catch((err) => console.error("Error updating submission score in Firestore:", err));
+
         get().addAuditLog(`Evaluated submission ${id}: Score ${score}`, "Submissions Evaluation");
       },
 
@@ -538,7 +552,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         set((state) => ({
           leaveRequests: [leaveObj, ...state.leaveRequests],
         }));
-        addDoc(collection(db, "leaves"), leaveObj).catch(err => console.error(err));
+
+        const payload: any = { ...leaveObj };
+        Object.keys(payload).forEach((k) => {
+          if (payload[k] === undefined) delete payload[k];
+        });
+
+        addDoc(collection(db, "leaves"), payload).catch(err => console.error("Error saving leave request to Firestore:", err));
         get().addAuditLog(`Submitted leave request for ${req.startDate}`, "Leave");
       },
 
@@ -548,6 +568,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             req.id === id ? { ...req, status, adminRemark: remark } : req
           ),
         }));
+
+        updateDoc(doc(db, "leaves", id), {
+          status,
+          adminRemark: remark || "",
+          updatedAt: new Date().toISOString(),
+        }).catch((err) => console.error("Error updating leave status in Firestore:", err));
+
         get().addAuditLog(`Updated leave request ${id} to ${status}`, "Leave Management");
       },
 
@@ -562,7 +589,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         set((state) => ({
           holidays: [holObj, ...state.holidays],
         }));
-        addDoc(collection(db, "holidays"), holObj).catch(err => console.error(err));
+
+        const payload: any = { ...holObj };
+        Object.keys(payload).forEach((k) => {
+          if (payload[k] === undefined) delete payload[k];
+        });
+
+        addDoc(collection(db, "holidays"), payload).catch(err => console.error("Error saving holiday to Firestore:", err));
         get().addAuditLog(`Added holiday: ${holidayData.title}`, "Calendar");
       },
 
@@ -588,24 +621,24 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         }, ...state.auditLogs],
       })),
 
-      // Realtime Listener across all 6 collections
+      // Realtime Listener across ALL 6 Firebase Firestore collections
       initFirebaseRealtimeSync: () => {
         const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
           const fetched: InternUser[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            fetched.push({
-              id: docSnap.id,
-              name: data.name,
-              email: data.email,
-              password: data.password || "devtech123",
-              batch: data.batch || "DEV-2026-FS04",
-              domain: data.domain || "Full Stack Web Development",
-            });
+            if (data.role !== "ADMIN") {
+              fetched.push({
+                id: docSnap.id,
+                name: data.name,
+                email: data.email,
+                password: data.password || "devtech123",
+                batch: data.batch || "DEV-2026-FS04",
+                domain: data.domain || "Full Stack Web Development",
+              });
+            }
           });
-          if (fetched.length > 0) {
-            set({ registeredInterns: fetched });
-          }
+          set({ registeredInterns: fetched });
         });
 
         const unsubTasks = onSnapshot(collection(db, "tasks"), (snapshot) => {
@@ -613,9 +646,23 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           snapshot.forEach((docSnap) => {
             fetchedTasks.push({ id: docSnap.id, ...docSnap.data() } as TaskItem);
           });
-          if (fetchedTasks.length > 0) {
-            set({ tasks: fetchedTasks });
-          }
+          set({ tasks: fetchedTasks });
+        });
+
+        const unsubAttendance = onSnapshot(collection(db, "attendance"), (snapshot) => {
+          const fetchedAtt: AttendanceRecord[] = [];
+          snapshot.forEach((docSnap) => {
+            fetchedAtt.push({ id: docSnap.id, ...docSnap.data() } as AttendanceRecord);
+          });
+          set({ attendanceHistory: fetchedAtt });
+        });
+
+        const unsubSubmissions = onSnapshot(collection(db, "submissions"), (snapshot) => {
+          const fetchedSubs: ProjectSubmission[] = [];
+          snapshot.forEach((docSnap) => {
+            fetchedSubs.push({ id: docSnap.id, ...docSnap.data() } as ProjectSubmission);
+          });
+          set({ submissions: fetchedSubs });
         });
 
         const unsubLeaves = onSnapshot(collection(db, "leaves"), (snapshot) => {
@@ -623,15 +670,24 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           snapshot.forEach((docSnap) => {
             fetchedLeaves.push({ id: docSnap.id, ...docSnap.data() } as LeaveRequest);
           });
-          if (fetchedLeaves.length > 0) {
-            set({ leaveRequests: fetchedLeaves });
-          }
+          set({ leaveRequests: fetchedLeaves });
+        });
+
+        const unsubHolidays = onSnapshot(collection(db, "holidays"), (snapshot) => {
+          const fetchedHols: CalendarHoliday[] = [];
+          snapshot.forEach((docSnap) => {
+            fetchedHols.push({ id: docSnap.id, ...docSnap.data() } as CalendarHoliday);
+          });
+          set({ holidays: fetchedHols });
         });
 
         return () => {
           unsubUsers();
           unsubTasks();
+          unsubAttendance();
+          unsubSubmissions();
           unsubLeaves();
+          unsubHolidays();
         };
       },
     }),

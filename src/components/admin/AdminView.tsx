@@ -1,37 +1,28 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
-  ShieldAlert,
-  PlusCircle,
-  Camera,
-  CalendarCheck,
-  Send,
-  UserCheck,
-  CheckCircle,
-  XCircle,
-  ExternalLink,
-  Award,
   Users,
-  Search,
-  Check,
-  Clock,
-  Plus,
-  Mail,
-  X,
-  Filter,
-  Paperclip,
-  FileText,
-  UserPlus,
-  Sparkles,
-  Download,
+  PlusCircle,
   FileSpreadsheet,
   Printer,
-  Key,
+  CheckCircle,
+  X,
+  Mail,
+  UserPlus,
   Loader2,
-  RefreshCw,
+  Key,
+  ShieldAlert,
+  Send,
+  UserCheck,
+  Calendar as CalendarIcon,
+  Activity,
+  Check,
+  Camera,
+  ExternalLink,
+  Award,
 } from "lucide-react";
-import { useWorkspaceStore } from "@/lib/store";
+import { useWorkspaceStore, InternUser, TaskItem, ProjectSubmission, LeaveRequest } from "@/lib/store";
 import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
 
 export default function AdminView() {
@@ -51,14 +42,13 @@ export default function AdminView() {
   } = useWorkspaceStore();
 
   const [activeAdminSubTab, setActiveAdminSubTab] = useState<
-    "assign-task" | "add-intern" | "interns-catalog" | "attendance-monitor" | "leave-approvals" | "submissions-grader" | "calendar-manager"
+    "assign-task" | "add-intern" | "interns-catalog" | "attendance-monitor" | "leave-approvals" | "submissions-grader" | "calendar-manager" | "audit-logs"
   >("assign-task");
 
-  // --- MongoDB Syncing State ---
   const [isLoadingInterns, setIsLoadingInterns] = useState(false);
   const [dbStatusMsg, setDbStatusMsg] = useState("");
 
-  const fetchInternsFromMongo = async () => {
+  const fetchInternsFromFirebase = async () => {
     setIsLoadingInterns(true);
     try {
       const res = await fetch("/api/interns");
@@ -73,19 +63,15 @@ export default function AdminView() {
             batch: intern.batch || "DEV-2026-FS04",
           });
         });
-        setDbStatusMsg("Synced with MongoDB Atlas Database!");
+        setDbStatusMsg("Synced with Firebase Firestore!");
         setTimeout(() => setDbStatusMsg(""), 4000);
       }
     } catch (err) {
-      console.error("Failed to fetch interns from MongoDB:", err);
+      console.error("Failed to fetch interns from Firebase:", err);
     } finally {
       setIsLoadingInterns(false);
     }
   };
-
-  useEffect(() => {
-    fetchInternsFromMongo();
-  }, []);
 
   // --- 1. Domain Filter & Email Chip Task Assignment State ---
   const [selectedDomainFilter, setSelectedDomainFilter] = useState<string>("All Domains");
@@ -100,6 +86,7 @@ export default function AdminView() {
   const [documentUrl, setDocumentUrl] = useState("");
   const [documentName, setDocumentName] = useState("");
   const [taskAssignSuccess, setTaskAssignSuccess] = useState(false);
+
   const domainsList = [
     "All Domains",
     "Full Stack Web Development",
@@ -162,8 +149,7 @@ export default function AdminView() {
   const handleAssignTaskMulti = (e: React.FormEvent) => {
     e.preventDefault();
     let currentEmails = [...selectedEmails];
-    
-    // Auto-add input email if typed but not Enter-key submitted
+
     if (chipInputEmail.trim() && !currentEmails.includes(chipInputEmail.trim().toLowerCase())) {
       currentEmails.push(chipInputEmail.trim().toLowerCase());
       setSelectedEmails(currentEmails);
@@ -191,7 +177,7 @@ export default function AdminView() {
     setTimeout(() => setTaskAssignSuccess(false), 4000);
   };
 
-  // --- 2. Add New Intern Form State (SIMPLIFIED) ---
+  // --- 2. Add New Intern Form State ---
   const [newInternName, setNewInternName] = useState("");
   const [newInternEmail, setNewInternEmail] = useState("");
   const [newInternPassword, setNewInternPassword] = useState("devtech123");
@@ -227,7 +213,7 @@ export default function AdminView() {
       if (res.ok && data.success) {
         addNewIntern({
           name: newInternName.trim(),
-          email: newInternEmail.trim().toLowerCase(),
+          email: newInternEmail.trim(),
           password: newInternPassword.trim(),
           domain: newInternDomain,
           batch: "DEV-2026-FS04",
@@ -238,20 +224,9 @@ export default function AdminView() {
         setNewInternPassword("devtech123");
         setInternCreatedSuccess(true);
         setTimeout(() => setInternCreatedSuccess(false), 5000);
-        fetchInternsFromMongo();
-      } else {
-        alert(`Failed to save to MongoDB: ${data.error || "Unknown error"}`);
       }
-    } catch (err: any) {
-      console.error("Error creating intern:", err);
-      addNewIntern({
-        name: newInternName.trim(),
-        email: newInternEmail.trim().toLowerCase(),
-        password: newInternPassword.trim(),
-        domain: newInternDomain,
-        batch: "DEV-2026-FS04",
-      });
-      setInternCreatedSuccess(true);
+    } catch (err) {
+      console.error("Error submitting intern:", err);
     } finally {
       setIsSubmittingIntern(false);
     }
@@ -274,21 +249,11 @@ export default function AdminView() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setResetStatusMsg(`Password for ${resetModalEmail} updated to "${resetNewPassword.trim()}" in MongoDB!`);
-        addNewIntern({
-          name: resetModalEmail.split("@")[0],
-          email: resetModalEmail,
-          password: resetNewPassword.trim(),
-          domain: "Full Stack Web Development",
-          batch: "DEV-2026-FS04",
-        });
+        setResetStatusMsg(`Password for ${resetModalEmail} successfully updated in Firebase!`);
         setTimeout(() => {
-          setResetModalEmail(null);
-          setResetNewPassword("");
           setResetStatusMsg("");
+          setResetModalEmail(null);
         }, 3000);
-      } else {
-        alert(data.error || "Failed to update password.");
       }
     } catch (err) {
       console.error("Error resetting password:", err);
@@ -297,9 +262,9 @@ export default function AdminView() {
     }
   };
 
-  // --- Submission Evaluation Modal / Inline State ---
+  // --- Submission Evaluation State ---
   const [evaluatingSubId, setEvaluatingSubId] = useState<string | null>(null);
-  const [evalScore, setEvalScore] = useState<number>(95);
+  const [evalScore, setEvalScore] = useState<number>(90);
   const [evalStatus, setEvalStatus] = useState<"Approved" | "Needs Revision">("Approved");
   const [evalRemarks, setEvalRemarks] = useState<string>("");
 
@@ -369,7 +334,7 @@ export default function AdminView() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12 font-sans">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 font-sans">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
@@ -380,11 +345,11 @@ export default function AdminView() {
             <h1 className="text-2xl font-bold flex items-center space-x-2">
               <span>Admin & Mentor Control Portal</span>
               <span className="bg-blue-500/30 text-blue-200 border border-blue-400/40 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                MongoDB Persistence
+                Firebase Realtime Firestore DB
               </span>
             </h1>
             <p className="text-xs text-blue-100 mt-0.5">
-              Create intern accounts saved directly to MongoDB Atlas. Synced across all mobile phones and laptops!
+              Synced across all mobile phones and laptops in real-time!
             </p>
           </div>
         </div>
@@ -397,12 +362,12 @@ export default function AdminView() {
           )}
 
           <button
-            onClick={fetchInternsFromMongo}
+            onClick={fetchInternsFromFirebase}
             disabled={isLoadingInterns}
             className="px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold rounded-xl shadow flex items-center space-x-1.5 border border-blue-500/30"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingInterns ? "animate-spin" : ""}`} />
-            <span>MongoDB Sync</span>
+            <Loader2 className={`w-3.5 h-3.5 ${isLoadingInterns ? "animate-spin" : ""}`} />
+            <span>Firebase Sync</span>
           </button>
 
           <button
@@ -423,67 +388,26 @@ export default function AdminView() {
         </div>
       </div>
 
-      {/* Metrics Summary Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 block">Total Registered Interns</span>
-            <span className="text-lg font-bold text-slate-900">{registeredInterns.length} Active</span>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Send className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 block">Pending Reviews</span>
-            <span className="text-lg font-bold text-slate-900">{submissions.filter(s => s.status === "Awaiting Evaluation").length} Submissions</span>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-            <UserCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 block">Pending Leaves</span>
-            <span className="text-lg font-bold text-slate-900">{leaveRequests.filter(l => l.status === "Pending").length} Requests</span>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Camera className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 block">Today's Check-ins</span>
-            <span className="text-lg font-bold text-slate-900">
-              {attendanceHistory.filter((a) => a.status === "Present" && a.date === "2026-10-06").length} / {registeredInterns.length}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Admin Navigation Sub-Tabs */}
-      <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
+      {/* Navigation Sub-Tabs Bar */}
+      <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs text-xs font-semibold">
         <button
           onClick={() => setActiveAdminSubTab("assign-task")}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-            activeAdminSubTab === "assign-task" ? "bg-white text-blue-600 shadow-xs font-bold" : "text-slate-600 hover:text-slate-900"
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
+            activeAdminSubTab === "assign-task"
+              ? "bg-blue-600 text-white shadow-md font-bold"
+              : "text-slate-600 hover:bg-slate-50"
           }`}
         >
-          <PlusCircle className="w-4 h-4" />
-          <span>Assign Task by Email</span>
+          <Mail className="w-4 h-4" />
+          <span>Assign Task</span>
         </button>
 
         <button
           onClick={() => setActiveAdminSubTab("interns-catalog")}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-            activeAdminSubTab === "interns-catalog" ? "bg-white text-blue-600 shadow-xs font-bold" : "text-slate-600 hover:text-slate-900"
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
+            activeAdminSubTab === "interns-catalog"
+              ? "bg-blue-600 text-white shadow-md font-bold"
+              : "text-slate-600 hover:bg-slate-50"
           }`}
         >
           <Users className="w-4 h-4" />
@@ -492,8 +416,10 @@ export default function AdminView() {
 
         <button
           onClick={() => setActiveAdminSubTab("add-intern")}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-            activeAdminSubTab === "add-intern" ? "bg-white text-blue-600 shadow-xs font-bold" : "text-slate-600 hover:text-slate-900"
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
+            activeAdminSubTab === "add-intern"
+              ? "bg-blue-600 text-white shadow-md font-bold"
+              : "text-slate-600 hover:bg-slate-50"
           }`}
         >
           <UserPlus className="w-4 h-4" />
@@ -502,22 +428,62 @@ export default function AdminView() {
 
         <button
           onClick={() => setActiveAdminSubTab("attendance-monitor")}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-            activeAdminSubTab === "attendance-monitor" ? "bg-white text-blue-600 shadow-xs font-bold" : "text-slate-600 hover:text-slate-900"
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
+            activeAdminSubTab === "attendance-monitor"
+              ? "bg-blue-600 text-white shadow-md font-bold"
+              : "text-slate-600 hover:bg-slate-50"
           }`}
         >
           <Camera className="w-4 h-4" />
-          <span>Attendance & Selfies</span>
+          <span>Attendance & Selfies ({attendanceHistory.length})</span>
         </button>
 
         <button
           onClick={() => setActiveAdminSubTab("submissions-grader")}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-            activeAdminSubTab === "submissions-grader" ? "bg-white text-blue-600 shadow-xs font-bold" : "text-slate-600 hover:text-slate-900"
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
+            activeAdminSubTab === "submissions-grader"
+              ? "bg-blue-600 text-white shadow-md font-bold"
+              : "text-slate-600 hover:bg-slate-50"
           }`}
         >
           <Send className="w-4 h-4" />
-          <span>Grade Submissions</span>
+          <span>Grade Submissions ({submissions.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminSubTab("leave-approvals")}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
+            activeAdminSubTab === "leave-approvals"
+              ? "bg-blue-600 text-white shadow-md font-bold"
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <UserCheck className="w-4 h-4" />
+          <span>Leave Approvals ({leaveRequests.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminSubTab("calendar-manager")}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
+            activeAdminSubTab === "calendar-manager"
+              ? "bg-blue-600 text-white shadow-md font-bold"
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <CalendarIcon className="w-4 h-4" />
+          <span>Calendar</span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminSubTab("audit-logs")}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
+            activeAdminSubTab === "audit-logs"
+              ? "bg-blue-600 text-white shadow-md font-bold"
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <Activity className="w-4 h-4" />
+          <span>Audit Logs</span>
         </button>
       </div>
 
@@ -525,14 +491,16 @@ export default function AdminView() {
       {activeAdminSubTab === "assign-task" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-lg flex items-center space-x-2">
-                <Sparkles className="w-5 h-5 text-blue-600" />
-                <span>Assign Task to Multi-Domain Interns</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Filter by domain, type or paste email addresses, tag multiple interns as chips, and attach specification documents!
-              </p>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
+                  <PlusCircle className="w-5 h-5 text-blue-600" />
+                  <span>Assign Task to Multi-Domain Interns</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Filter by domain, type or paste email addresses, tag multiple interns as chips, and attach specification documents!
+                </p>
+              </div>
             </div>
 
             {taskAssignSuccess && (
@@ -542,11 +510,9 @@ export default function AdminView() {
               </div>
             )}
 
-            {/* DOMAIN FILTER TABS */}
+            {/* Domain Filter Pills */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-700">
-                Step 1: Filter Interns by Domain Track
-              </label>
+              <label className="block text-xs font-bold text-slate-700">Step 1: Filter Interns by Domain Track</label>
               <div className="flex flex-wrap items-center gap-1.5">
                 {domainsList.map((dom) => {
                   const count =
@@ -562,7 +528,7 @@ export default function AdminView() {
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
                         isActive
                           ? "bg-blue-600 text-white shadow-xs"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          : "bg-slate-100 text-slate-600 hover:bg-blue-50"
                       }`}
                     >
                       <span>{dom}</span>
@@ -579,7 +545,7 @@ export default function AdminView() {
               </div>
             </div>
 
-            {/* GMAIL-STYLE EMAIL CHIP TAG INPUT */}
+            {/* Gmail Chip Input Box */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700">
@@ -631,7 +597,7 @@ export default function AdminView() {
                         ? "Type intern email and press Enter..."
                         : "Type more emails..."
                     }
-                    className="flex-1 min-w-[200px] bg-transparent text-xs text-slate-900 focus:outline-none py-1 font-medium placeholder-slate-400"
+                    className="flex-1 min-w-[200px] bg-transparent text-xs text-slate-900 focus:outline-none py-1 font-medium"
                   />
                 </div>
               </div>
@@ -640,9 +606,7 @@ export default function AdminView() {
             {/* FORM INPUTS */}
             <form onSubmit={handleAssignTaskMulti} className="space-y-4 text-xs pt-2">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Task Title *
-                </label>
+                <label className="block font-bold text-slate-700 mb-1">Task Title *</label>
                 <input
                   required
                   type="text"
@@ -654,9 +618,7 @@ export default function AdminView() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Task Instructions
-                </label>
+                <label className="block font-bold text-slate-700 mb-1">Task Instructions</label>
                 <textarea
                   rows={3}
                   value={assignDescription}
@@ -664,6 +626,31 @@ export default function AdminView() {
                   placeholder="Detailed steps, API specs..."
                   className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Priority</label>
+                  <select
+                    value={assignPriority}
+                    onChange={(e) => setAssignPriority(e.target.value as any)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900"
+                  >
+                    <option value="HIGH Priority">HIGH Priority</option>
+                    <option value="MEDIUM Priority">MEDIUM Priority</option>
+                    <option value="LOW Priority">LOW Priority</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Due Date</label>
+                  <input
+                    type="date"
+                    value={assignDueDate}
+                    onChange={(e) => setAssignDueDate(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900"
+                  />
+                </div>
               </div>
 
               <button
@@ -677,25 +664,32 @@ export default function AdminView() {
             </form>
           </div>
 
+          {/* Assigned Tasks Box */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-            <h4 className="font-bold text-sm text-slate-900 pb-2 border-b border-slate-100">
-              Recently Assigned Tasks ({tasks.length})
+            <h4 className="font-bold text-sm text-slate-900 border-b pb-2 flex items-center justify-between">
+              <span>Assigned Tasks ({tasks.length})</span>
+              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-bold">{tasks.length}</span>
             </h4>
 
-            <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-              {tasks.map((t) => (
-                <div key={t.id} className="p-3 bg-slate-50 rounded-xl text-xs space-y-1 border border-slate-200">
-                  <div className="flex items-center justify-between font-bold text-slate-900">
-                    <span className="truncate">{t.title}</span>
-                    <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded">
-                      {t.status}
-                    </span>
+            <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1 text-xs">
+              {tasks.length === 0 ? (
+                <p className="text-slate-400 text-xs text-center py-8">No tasks assigned yet.</p>
+              ) : (
+                tasks.map((t) => (
+                  <div key={t.id} className="p-3.5 bg-slate-50 rounded-xl space-y-1.5 border border-slate-200">
+                    <div className="flex items-center justify-between font-bold text-slate-900">
+                      <span className="truncate">{t.title}</span>
+                      <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-semibold">
+                        {t.priority}
+                      </span>
+                    </div>
+
+                    <p className="text-slate-500 text-[11px]">
+                      Assigned to: <strong>{t.assignedToName}</strong> ({t.assignedToEmail})
+                    </p>
                   </div>
-                  <p className="text-slate-500 text-[11px]">
-                    Assigned to: <strong>{t.assignedToName}</strong> ({t.assignedToEmail})
-                  </p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -710,7 +704,7 @@ export default function AdminView() {
                 DevTech Registered Intern Directory ({registeredInterns.length} Total Interns)
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Real-time MongoDB Atlas synced accounts. Use Change Password button to set new passwords.
+                Real-time Firebase Firestore synced accounts. Use Change Password button to set new passwords.
               </p>
             </div>
 
@@ -744,46 +738,54 @@ export default function AdminView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-800">
-                {filteredInterns.map((intern) => (
-                  <tr key={intern.email} className="hover:bg-slate-50">
-                    <td className="py-3.5 px-4 font-bold text-slate-900">{intern.name}</td>
-                    <td className="py-3.5 px-4 font-semibold text-blue-600">{intern.email}</td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                        {intern.domain}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-800">
-                      {intern.password || "devtech123"}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => {
-                          setResetModalEmail(intern.email);
-                          setResetNewPassword(intern.password || "devtech123");
-                        }}
-                        className="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold rounded-lg text-[11px] inline-flex items-center space-x-1 transition"
-                      >
-                        <Key className="w-3 h-3 text-amber-600" />
-                        <span>Change Password</span>
-                      </button>
+                {registeredInterns.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-400">
+                      No interns registered yet. Go to "Add New Intern" tab to create intern accounts.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  registeredInterns.map((intern) => (
+                    <tr key={intern.email} className="hover:bg-slate-50">
+                      <td className="py-3.5 px-4 font-bold text-slate-900">{intern.name}</td>
+                      <td className="py-3.5 px-4 font-semibold text-blue-600">{intern.email}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                          {intern.domain}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-800">
+                        {intern.password || "devtech123"}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          onClick={() => {
+                            setResetModalEmail(intern.email);
+                            setResetNewPassword(intern.password || "devtech123");
+                          }}
+                          className="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold rounded-lg text-[11px] inline-flex items-center space-x-1 transition"
+                        >
+                          <Key className="w-3 h-3 text-amber-600" />
+                          <span>Change Password</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* ================= SUB-TAB 3: SIMPLIFIED ADD NEW INTERN ACCOUNT ================= */}
+      {/* ================= SUB-TAB 3: ADD NEW INTERN ACCOUNT ================= */}
       {activeAdminSubTab === "add-intern" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
             <div className="pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-900 text-base">Add New Intern Account (MongoDB Atlas Sync)</h3>
+              <h3 className="font-bold text-slate-900 text-base">Add New Intern Account (Firebase Sync)</h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Register a new intern account with Email & Password. Saved directly to MongoDB database!
+                Register a new intern account with Email & Password. Saved directly to Firebase Firestore!
               </p>
             </div>
 
@@ -791,12 +793,11 @@ export default function AdminView() {
               <div className="p-3.5 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-semibold flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>
-                  New intern account registered in MongoDB Atlas! Mobile phone & laptop can both log in immediately with these credentials.
+                  New intern account registered in Firebase Firestore! Mobile phone & laptop can both log in immediately with these credentials.
                 </span>
               </div>
             )}
 
-            {/* SIMPLIFIED FORM FOR USER */}
             <form onSubmit={handleCreateIntern} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -864,12 +865,12 @@ export default function AdminView() {
                 {isSubmittingIntern ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>SAVING TO MONGODB ATLAS...</span>
+                    <span>SAVING TO FIREBASE FIRESTORE...</span>
                   </>
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4" />
-                    <span>CREATE & REGISTER INTERN ACCOUNT IN MONGODB</span>
+                    <span>CREATE & REGISTER INTERN ACCOUNT IN FIREBASE</span>
                   </>
                 )}
               </button>
@@ -878,7 +879,7 @@ export default function AdminView() {
 
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
             <h4 className="font-bold text-sm text-slate-900 border-b pb-2 flex items-center justify-between">
-              <span>MongoDB Registered Accounts</span>
+              <span>Firebase Registered Accounts</span>
               <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-bold">
                 {registeredInterns.length}
               </span>
@@ -889,7 +890,7 @@ export default function AdminView() {
                   <div className="flex items-center justify-between font-bold">
                     <span className="text-slate-900">{intern.name}</span>
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                      MongoDB
+                      Firebase Realtime
                     </span>
                   </div>
                   <p className="text-slate-500 text-[11px] truncate">{intern.email}</p>
@@ -901,6 +902,364 @@ export default function AdminView() {
         </div>
       )}
 
+      {/* ================= SUB-TAB 4: ATTENDANCE & SELFIES MONITOR ================= */}
+      {activeAdminSubTab === "attendance-monitor" && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
+                <Camera className="w-5 h-5 text-blue-600" />
+                <span>Attendance Log & WebRTC Photo Verification ({attendanceHistory.length})</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Real-time Firestore check-in logs with web selfie images and IP address verification.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px] tracking-wider bg-slate-50">
+                  <th className="py-3 px-4">Intern Name</th>
+                  <th className="py-3 px-4">Email Address</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Check-in Time</th>
+                  <th className="py-3 px-4">Selfie Photo</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">IP Address</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-800">
+                {attendanceHistory.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400">
+                      No attendance marked yet. Interns can mark check-in from their dashboard.
+                    </td>
+                  </tr>
+                ) : (
+                  attendanceHistory.map((att) => (
+                    <tr key={att.id} className="hover:bg-slate-50">
+                      <td className="py-3.5 px-4 font-bold text-slate-900">{att.internName}</td>
+                      <td className="py-3.5 px-4 font-semibold text-blue-600">{att.internEmail}</td>
+                      <td className="py-3.5 px-4 font-mono">{att.date}</td>
+                      <td className="py-3.5 px-4 font-mono font-bold text-emerald-600">{att.time || "09:30 AM"}</td>
+                      <td className="py-3.5 px-4">
+                        {att.selfieUrl ? (
+                          <button
+                            onClick={() => setPreviewSelfieUrl(att.selfieUrl!)}
+                            className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 font-bold rounded-lg text-[10px] inline-flex items-center space-x-1"
+                          >
+                            <Camera className="w-3 h-3 text-blue-600" />
+                            <span>View Photo</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 italic">No Photo</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          {att.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-mono text-slate-500">{att.ipAddress || "103.21.124.5"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ================= SUB-TAB 5: SUBMISSIONS GRADER & EVALUATOR ================= */}
+      {activeAdminSubTab === "submissions-grader" && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
+                <Send className="w-5 h-5 text-blue-600" />
+                <span>Project Deliverable Submissions Grader ({submissions.length})</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Review submitted Google Drive folder links, evaluate quality, and assign marks (0-100).
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={exportSubmissionsExcel}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Excel Export</span>
+              </button>
+              <button
+                onClick={exportSubmissionsPDF}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>PDF Export</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px] tracking-wider bg-slate-50">
+                  <th className="py-3 px-4">Intern Full Name</th>
+                  <th className="py-3 px-4">Project Title</th>
+                  <th className="py-3 px-4">Drive Link</th>
+                  <th className="py-3 px-4">Submitted At</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Score</th>
+                  <th className="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-800">
+                {submissions.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400">
+                      No project deliverables submitted yet. Interns can submit drive links from Submissions view.
+                    </td>
+                  </tr>
+                ) : (
+                  submissions.map((sub) => (
+                    <tr key={sub.id} className="hover:bg-slate-50">
+                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                        {sub.internName}
+                        <span className="block text-[10px] font-semibold text-blue-600">{sub.internEmail}</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-slate-800">{sub.projectTitle}</td>
+                      <td className="py-3.5 px-4">
+                        <a
+                          href={sub.driveLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 font-bold hover:underline inline-flex items-center space-x-1"
+                        >
+                          <span>Drive Folder</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-slate-500">{sub.submittedAt}</td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                            sub.status === "Approved"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : sub.status === "Needs Revision"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {sub.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                        {sub.score !== null && sub.score !== undefined ? (
+                          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200">
+                            {sub.score} / 100
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic">Not Graded</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          onClick={() => {
+                            setEvaluatingSubId(sub.id);
+                            setEvalScore(sub.score || 90);
+                            setEvalStatus(sub.status === "Approved" ? "Approved" : "Approved");
+                            setEvalRemarks(sub.mentorRemarks || "");
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition"
+                        >
+                          Grade & Score
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ================= SUB-TAB 6: LEAVE & WFH APPROVALS ================= */}
+      {activeAdminSubTab === "leave-approvals" && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
+                <UserCheck className="w-5 h-5 text-blue-600" />
+                <span>Leave & Work From Home (WFH) Approvals ({leaveRequests.length})</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Review incoming leave applications and update approval status.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px] tracking-wider bg-slate-50">
+                  <th className="py-3 px-4">Intern Name</th>
+                  <th className="py-3 px-4">Leave Type</th>
+                  <th className="py-3 px-4">Dates</th>
+                  <th className="py-3 px-4">Reason</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-800">
+                {leaveRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                      No leave applications submitted yet.
+                    </td>
+                  </tr>
+                ) : (
+                  leaveRequests.map((req) => (
+                    <tr key={req.id} className="hover:bg-slate-50">
+                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                        {req.internName}
+                        <span className="block text-[10px] font-semibold text-blue-600">{req.internEmail}</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold">{req.type}</td>
+                      <td className="py-3.5 px-4 font-mono">{req.startDate} → {req.endDate}</td>
+                      <td className="py-3.5 px-4 text-slate-600">{req.reason}</td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                            req.status === "Approved"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : req.status === "Rejected"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {req.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right space-x-2">
+                        <button
+                          onClick={() => updateLeaveStatus(req.id, "Approved", "Approved by Admin")}
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px]"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => updateLeaveStatus(req.id, "Rejected", "Rejected by Admin")}
+                          className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-[11px]"
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* EVALUATION MODAL */}
+      {evaluatingSubId && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-extrabold text-slate-900 text-sm flex items-center space-x-2">
+                <Award className="w-4 h-4 text-blue-600" />
+                <span>Evaluate Deliverable Submission</span>
+              </h3>
+              <button onClick={() => setEvaluatingSubId(null)} className="p-1 text-slate-400 hover:text-slate-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Score / Grade (0 - 100)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={evalScore}
+                  onChange={(e) => setEvalScore(Number(e.target.value))}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Evaluation Status</label>
+                <select
+                  value={evalStatus}
+                  onChange={(e) => setEvalStatus(e.target.value as any)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900"
+                >
+                  <option value="Approved">Approved</option>
+                  <option value="Needs Revision">Needs Revision</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Mentor Remarks</label>
+                <textarea
+                  rows={3}
+                  value={evalRemarks}
+                  onChange={(e) => setEvalRemarks(e.target.value)}
+                  placeholder="Feedback for intern..."
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEvaluatingSubId(null)}
+                  className="px-4 py-2 border border-slate-300 font-bold text-slate-700 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveEvaluation(evaluatingSubId)}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-xs"
+                >
+                  Save Grade & Feedback
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SELFIE PHOTO MODAL */}
+      {previewSelfieUrl && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-center">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h4 className="font-bold text-slate-900 text-xs">WebRTC Selfie Verification</h4>
+              <button onClick={() => setPreviewSelfieUrl(null)}>
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+            <img src={previewSelfieUrl} alt="Intern Check-in Selfie" className="w-full h-64 object-cover rounded-xl border" />
+            <button
+              onClick={() => setPreviewSelfieUrl(null)}
+              className="w-full py-2 bg-blue-600 text-white font-bold rounded-xl text-xs"
+            >
+              Close Photo Preview
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* RESET PASSWORD MODAL */}
       {resetModalEmail && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -908,7 +1267,7 @@ export default function AdminView() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center space-x-2 text-slate-900 font-extrabold text-sm">
                 <Key className="w-4 h-4 text-amber-600" />
-                <span>Reset Intern Password (MongoDB)</span>
+                <span>Reset Intern Password (Firebase Firestore)</span>
               </div>
               <button onClick={() => setResetModalEmail(null)} className="p-1 text-slate-400 hover:text-slate-700">
                 <X className="w-4 h-4" />
@@ -962,7 +1321,7 @@ export default function AdminView() {
                   ) : (
                     <Key className="w-4 h-4 text-white" />
                   )}
-                  <span>Update Password in MongoDB</span>
+                  <span>Update Password in Firebase</span>
                 </button>
               </div>
             </form>
