@@ -836,18 +836,14 @@ export default function AdminView() {
 
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Domain Track</label>
-                  <select
+                  <input
+                    type="text"
+                    required
                     value={newInternDomain}
                     onChange={(e) => setNewInternDomain(e.target.value)}
+                    placeholder="e.g. Full Stack Web Development"
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  >
-                    <option value="Full Stack Web Development">Full Stack Web Development</option>
-                    <option value="Python & AI/ML">Python & AI/ML</option>
-                    <option value="Data Analytics">Data Analytics</option>
-                    <option value="Cloud & DevOps">Cloud & DevOps</option>
-                    <option value="Cyber Security">Cyber Security</option>
-                    <option value="UI/UX Design">UI/UX Design</option>
-                  </select>
+                  />
                 </div>
               </div>
 
