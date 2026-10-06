@@ -22,6 +22,10 @@ export default function Home() {
 
   useEffect(() => {
     setIsMounted(true);
+    const cleanup = useWorkspaceStore.getState().initFirebaseRealtimeSync();
+    return () => {
+      cleanup();
+    };
   }, []);
 
   useEffect(() => {

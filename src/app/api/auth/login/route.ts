@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
-import User from "@/models/User";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export async function POST(req: Request) {
   try {
@@ -15,29 +15,38 @@ export async function POST(req: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
 
-    // Connect to MongoDB with timeout protection
-    const conn = await connectToDatabase();
+    // Query Firestore users collection
+    const userRef = doc(db, "users", cleanEmail);
+    const userSnap = await getDoc(userRef);
 
-    if (!conn) {
-      return NextResponse.json(
-        { success: false, error: "Database connection temporarily unavailable. Please try again in a few seconds." },
-        { status: 503 }
-      );
-    }
+    if (!userSnap.exists()) {
+      // Pre-seed default user if checking initial default intern mohiteyash940@gmail.com
+      if (cleanEmail === "mohiteyash940@gmail.com" && (cleanPassword === "devtech123" || cleanPassword === "yash0604")) {
+        const defaultUser = {
+          id: cleanEmail,
+          name: "Mohite Yash",
+          email: cleanEmail,
+          password: cleanPassword,
+          domain: "Full Stack Web Development",
+          batch: "DEV-2026-FS04",
+          role: "INTERN",
+        };
+        await setDoc(userRef, defaultUser);
+        return NextResponse.json({ success: true, data: defaultUser });
+      }
 
-    // Find intern in MongoDB devtech_workspace DB
-    const user = await User.findOne({ email: cleanEmail });
-
-    if (!user) {
       return NextResponse.json(
         { success: false, error: "Invalid intern email or password! Please verify your login credentials or ask Admin to register your account." },
         { status: 401 }
       );
     }
 
-    // Check password match
-    if (user.password && user.password !== password.trim()) {
+    const userData = userSnap.data();
+
+    // Verify Password
+    if (userData.password && userData.password !== cleanPassword) {
       return NextResponse.json(
         { success: false, error: "Invalid intern email or password! Please verify your login credentials or ask Admin to register your account." },
         { status: 401 }
@@ -47,18 +56,18 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       data: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        domain: user.domain || "Full Stack Web Development",
-        batch: user.batch || "DEV-2026-FS04",
-        role: user.role,
+        id: userData.id || cleanEmail,
+        name: userData.name,
+        email: userData.email,
+        domain: userData.domain || "Full Stack Web Development",
+        batch: userData.batch || "DEV-2026-FS04",
+        role: userData.role || "INTERN",
       },
     });
   } catch (error: any) {
-    console.error("Error during MongoDB login authentication:", error);
+    console.error("Error during Firebase login authentication:", error);
     return NextResponse.json(
-      { success: false, error: "Invalid intern email or password! Please verify your login credentials or ask Admin to register your account." },
+      { success: false, error: "Authentication failed. Please verify credentials." },
       { status: 500 }
     );
   }

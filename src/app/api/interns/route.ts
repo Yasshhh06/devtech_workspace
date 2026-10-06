@@ -1,37 +1,36 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
-import User from "@/models/User";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 
 export async function GET() {
   try {
-    const conn = await connectToDatabase();
-    if (!conn) {
-      return NextResponse.json({ success: true, data: [] });
-    }
+    const usersCol = collection(db, "users");
+    const querySnapshot = await getDocs(usersCol);
+    const interns: any[] = [];
 
-    // Fetch all registered intern users from MongoDB Atlas
-    let interns = await User.find({}).sort({ createdAt: -1 });
+    querySnapshot.forEach((docSnap) => {
+      interns.push(docSnap.data());
+    });
 
+    // Seed default intern if collection is empty
     if (interns.length === 0) {
-      const defaultIntern = await User.findOneAndUpdate(
-        { email: "mohiteyash940@gmail.com" },
-        {
-          name: "Mohite Yash",
-          email: "mohiteyash940@gmail.com",
-          password: "devtech123",
-          role: "INTERN",
-          domain: "Full Stack Web Development",
-          batch: "DEV-2026-FS04",
-          isActive: true,
-        },
-        { upsert: true, new: true }
-      );
-      interns = [defaultIntern];
+      const defaultRef = doc(db, "users", "mohiteyash940@gmail.com");
+      const defaultIntern = {
+        id: "mohiteyash940@gmail.com",
+        name: "Mohite Yash",
+        email: "mohiteyash940@gmail.com",
+        password: "devtech123",
+        role: "INTERN",
+        domain: "Full Stack Web Development",
+        batch: "DEV-2026-FS04",
+      };
+      await setDoc(defaultRef, defaultIntern);
+      interns.push(defaultIntern);
     }
 
     return NextResponse.json({ success: true, data: interns });
   } catch (error: any) {
-    console.error("Error fetching interns from MongoDB:", error);
+    console.error("Error fetching interns from Firebase Firestore:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
@@ -48,34 +47,24 @@ export async function POST(req: Request) {
       );
     }
 
-    const conn = await connectToDatabase();
-    if (!conn) {
-      return NextResponse.json(
-        { success: false, error: "Database connection unavailable. Please try again." },
-        { status: 503 }
-      );
-    }
-
     const cleanEmail = email.trim().toLowerCase();
+    const userRef = doc(db, "users", cleanEmail);
 
-    // Create or update intern document in MongoDB Atlas devtech_workspace DB
-    const intern = await User.findOneAndUpdate(
-      { email: cleanEmail },
-      {
-        name: name.trim(),
-        email: cleanEmail,
-        password: password.trim(),
-        domain: domain || "Full Stack Web Development",
-        role: "INTERN",
-        batch: "DEV-2026-FS04",
-        isActive: true,
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const newIntern = {
+      id: cleanEmail,
+      name: name.trim(),
+      email: cleanEmail,
+      password: password.trim(),
+      domain: domain || "Full Stack Web Development",
+      batch: "DEV-2026-FS04",
+      role: "INTERN",
+    };
 
-    return NextResponse.json({ success: true, data: intern });
+    await setDoc(userRef, newIntern, { merge: true });
+
+    return NextResponse.json({ success: true, data: newIntern });
   } catch (error: any) {
-    console.error("Error creating intern in MongoDB:", error);
+    console.error("Error creating intern in Firebase Firestore:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

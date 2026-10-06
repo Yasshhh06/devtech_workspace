@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
-import User from "@/models/User";
+import { db } from "@/lib/firebase";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 
 export async function PUT(req: Request) {
   try {
@@ -14,34 +14,28 @@ export async function PUT(req: Request) {
       );
     }
 
-    const conn = await connectToDatabase();
-    if (!conn) {
-      return NextResponse.json(
-        { success: false, error: "Database connection unavailable." },
-        { status: 503 }
-      );
-    }
-
     const cleanEmail = email.trim().toLowerCase();
-    const user = await User.findOne({ email: cleanEmail });
+    const userRef = doc(db, "users", cleanEmail);
+    const userSnap = await getDoc(userRef);
 
-    if (!user) {
+    if (!userSnap.exists()) {
       return NextResponse.json(
-        { success: false, error: "Intern account not found with this email." },
+        { success: false, error: "Intern account not found with this email in Firebase." },
         { status: 404 }
       );
     }
 
-    user.password = newPassword.trim();
-    await user.save();
+    await updateDoc(userRef, {
+      password: newPassword.trim(),
+    });
 
     return NextResponse.json({
       success: true,
-      message: `Password for ${user.email} updated successfully!`,
-      data: { email: user.email, name: user.name },
+      message: `Password for ${cleanEmail} updated successfully in Firebase Firestore!`,
+      data: { email: cleanEmail, name: userSnap.data()?.name },
     });
   } catch (error: any) {
-    console.error("Error resetting intern password in MongoDB:", error);
+    console.error("Error resetting intern password in Firebase Firestore:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

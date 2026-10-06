@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, doc, setDoc, updateDoc, addDoc } from "firebase/firestore";
 
 export type NavTab = 
   | "dashboard"
@@ -192,14 +194,16 @@ interface WorkspaceState {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 
-  // Registered Interns Database (50+ Multi-domain interns)
+  // Registered Interns Database (Synced with Firebase)
   registeredInterns: InternUser[];
+  setRegisteredInterns: (interns: InternUser[]) => void;
   addNewIntern: (intern: Omit<InternUser, "id">) => InternUser;
 
   // Attendance state
   isCheckedIn: boolean;
   checkinTime: string | null;
   attendanceHistory: AttendanceRecord[];
+  setAttendanceHistory: (history: AttendanceRecord[]) => void;
   markAttendance: (selfieUrl?: string) => void;
 
   // Projects store
@@ -207,6 +211,7 @@ interface WorkspaceState {
   
   // Tasks store
   tasks: TaskItem[];
+  setTasks: (tasks: TaskItem[]) => void;
   assignTaskToIntern: (task: Omit<TaskItem, "id">) => void;
   assignTaskToMultipleInterns: (
     targetEmails: string[],
@@ -221,16 +226,19 @@ interface WorkspaceState {
 
   // Submissions Store
   submissions: ProjectSubmission[];
+  setSubmissions: (subs: ProjectSubmission[]) => void;
   addSubmission: (projectTitle: string, driveLink: string, adminNote: string) => void;
   evaluateSubmission: (id: string, score: number, status: "Approved" | "Needs Revision", remarks: string) => void;
 
   // Leave Requests Store
   leaveRequests: LeaveRequest[];
+  setLeaveRequests: (leaves: LeaveRequest[]) => void;
   addLeaveRequest: (req: Omit<LeaveRequest, "id" | "status">) => void;
   updateLeaveStatus: (id: string, status: "Approved" | "Rejected", remark?: string) => void;
 
   // Calendar Holidays Store
   holidays: CalendarHoliday[];
+  setHolidays: (holidays: CalendarHoliday[]) => void;
   addHoliday: (holiday: Omit<CalendarHoliday, "id">) => void;
 
   // Additional Modules Store
@@ -244,12 +252,14 @@ interface WorkspaceState {
   addAnnouncement: (announcement: Omit<AnnouncementItem, "id">) => void;
   addAuditLog: (action: string, module: string) => void;
   updateUserProfile: (displayName: string, mobile: string) => void;
+
+  // Realtime Sync Listener Setup
+  initFirebaseRealtimeSync: () => () => void;
 }
 
-// Clean Slate Initial State for Production Ready Setup
 const initialInternsList: InternUser[] = [
   {
-    id: "int-1",
+    id: "mohiteyash940@gmail.com",
     name: "Mohite Yash",
     email: "mohiteyash940@gmail.com",
     password: "devtech123",
@@ -290,8 +300,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       },
 
       internLogin: (email, password) => {
+        const cleanEmail = email.toLowerCase().trim();
         const found = get().registeredInterns.find(
-          (i) => i.email.toLowerCase() === email.toLowerCase().trim()
+          (i) => i.email.toLowerCase() === cleanEmail
         );
         if (found) {
           if (found.password && password && found.password !== password) {
@@ -324,22 +335,38 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setSearchQuery: (query) => set({ searchQuery: query }),
 
       registeredInterns: initialInternsList,
+      setRegisteredInterns: (interns) => set({ registeredInterns: interns }),
 
       addNewIntern: (newIntern) => {
+        const cleanEmail = newIntern.email.toLowerCase().trim();
         const created: InternUser = {
-          id: `intern-${Date.now()}`,
+          id: cleanEmail,
           ...newIntern,
+          email: cleanEmail,
         };
-        set((state) => ({
-          registeredInterns: [created, ...state.registeredInterns],
-        }));
-        get().addAuditLog(`Added Intern ${created.name} (${created.email})`, "Intern Management");
+
+        const existingFiltered = get().registeredInterns.filter((i) => i.email.toLowerCase() !== cleanEmail);
+        set({ registeredInterns: [created, ...existingFiltered] });
+
+        // Save to Firebase Firestore users collection asynchronously
+        setDoc(doc(db, "users", cleanEmail), {
+          id: cleanEmail,
+          name: created.name,
+          email: cleanEmail,
+          password: created.password || "devtech123",
+          domain: created.domain || "Full Stack Web Development",
+          batch: created.batch || "DEV-2026-FS04",
+          role: "INTERN",
+        }, { merge: true }).catch(err => console.error("Firebase sync error:", err));
+
+        get().addAuditLog(`Added Intern ${created.name} (${cleanEmail})`, "Intern Management");
         return created;
       },
 
       isCheckedIn: false,
       checkinTime: null,
       attendanceHistory: [],
+      setAttendanceHistory: (history) => set({ attendanceHistory: history }),
 
       markAttendance: (selfieUrl) => {
         const now = new Date();
@@ -366,6 +393,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           checkinTime: timeStr,
           attendanceHistory: [newRecord, ...state.attendanceHistory],
         }));
+
+        addDoc(collection(db, "attendance"), newRecord).catch(err => console.error(err));
         get().addAuditLog(`Marked attendance for ${currentEmail}`, "Attendance");
       },
 
@@ -378,6 +407,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       projects: [],
 
       tasks: [],
+      setTasks: (tasks) => set({ tasks }),
 
       assignTaskToIntern: (taskData) => {
         const newTask: TaskItem = {
@@ -387,6 +417,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         set((state) => ({
           tasks: [newTask, ...state.tasks],
         }));
+        addDoc(collection(db, "tasks"), newTask).catch(err => console.error(err));
         get().addAuditLog(`Assigned task "${taskData.title}" to ${taskData.assignedToEmail}`, "Task Management");
       },
 
@@ -395,7 +426,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         const newTasks: TaskItem[] = targetEmails.map((email) => {
           let intern = state.registeredInterns.find((i) => i.email.toLowerCase() === email.toLowerCase());
           
-          // Auto-register email chip if it doesn't exist yet!
           if (!intern) {
             const nameFromEmail = email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
             intern = get().addNewIntern({
@@ -408,7 +438,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             });
           }
 
-          return {
+          const taskObj: TaskItem = {
             id: `t-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
             title,
             description,
@@ -421,6 +451,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             documentUrl,
             documentName: documentName || (documentUrl ? "Task_Specification_Document.pdf" : undefined),
           };
+
+          addDoc(collection(db, "tasks"), taskObj).catch(err => console.error(err));
+          return taskObj;
         });
 
         set((prevState) => ({
@@ -430,25 +463,25 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       },
 
       submissions: [],
+      setSubmissions: (submissions) => set({ submissions }),
 
       addSubmission: (projectTitle, driveLink, adminNote) => {
         const internName = get().currentIntern?.name || "Mohite Yash";
         const internEmail = get().currentIntern?.email || "mohiteyash940@gmail.com";
+        const subRecord: ProjectSubmission = {
+          id: `sub-${Date.now()}`,
+          internName,
+          internEmail,
+          projectTitle,
+          driveLink,
+          adminNote,
+          submittedAt: new Date().toLocaleString(),
+          status: "Awaiting Evaluation",
+        };
         set((state) => ({
-          submissions: [
-            {
-              id: `sub-${Date.now()}`,
-              internName,
-              internEmail,
-              projectTitle,
-              driveLink,
-              adminNote,
-              submittedAt: new Date().toLocaleString(),
-              status: "Awaiting Evaluation",
-            },
-            ...state.submissions,
-          ],
+          submissions: [subRecord, ...state.submissions],
         }));
+        addDoc(collection(db, "submissions"), subRecord).catch(err => console.error(err));
         get().addAuditLog(`Submitted project "${projectTitle}"`, "Submissions");
       },
 
@@ -462,18 +495,18 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       },
 
       leaveRequests: [],
+      setLeaveRequests: (leaveRequests) => set({ leaveRequests }),
 
       addLeaveRequest: (req) => {
+        const leaveObj: LeaveRequest = {
+          id: `leave-${Date.now()}`,
+          ...req,
+          status: "Pending",
+        };
         set((state) => ({
-          leaveRequests: [
-            {
-              id: `leave-${Date.now()}`,
-              ...req,
-              status: "Pending",
-            },
-            ...state.leaveRequests,
-          ],
+          leaveRequests: [leaveObj, ...state.leaveRequests],
         }));
+        addDoc(collection(db, "leaves"), leaveObj).catch(err => console.error(err));
         get().addAuditLog(`Submitted leave request for ${req.startDate}`, "Leave");
       },
 
@@ -487,30 +520,25 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       },
 
       holidays: [],
+      setHolidays: (holidays) => set({ holidays }),
 
       addHoliday: (holidayData) => {
+        const holObj: CalendarHoliday = {
+          id: `h-${Date.now()}`,
+          ...holidayData,
+        };
         set((state) => ({
-          holidays: [
-            {
-              id: `h-${Date.now()}`,
-              ...holidayData,
-            },
-            ...state.holidays,
-          ],
+          holidays: [holObj, ...state.holidays],
         }));
+        addDoc(collection(db, "holidays"), holObj).catch(err => console.error(err));
         get().addAuditLog(`Added holiday: ${holidayData.title}`, "Calendar");
       },
 
       assessments: [],
-
       announcements: [],
-
       resources: [],
-
       documents: [],
-
       certificates: [],
-
       auditLogs: [],
 
       addAnnouncement: (announcement) => set((state) => ({
@@ -527,9 +555,56 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           ip: "103.21.124.5",
         }, ...state.auditLogs],
       })),
+
+      // Realtime Listener across all 6 collections
+      initFirebaseRealtimeSync: () => {
+        const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+          const fetched: InternUser[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            fetched.push({
+              id: docSnap.id,
+              name: data.name,
+              email: data.email,
+              password: data.password || "devtech123",
+              batch: data.batch || "DEV-2026-FS04",
+              domain: data.domain || "Full Stack Web Development",
+            });
+          });
+          if (fetched.length > 0) {
+            set({ registeredInterns: fetched });
+          }
+        });
+
+        const unsubTasks = onSnapshot(collection(db, "tasks"), (snapshot) => {
+          const fetchedTasks: TaskItem[] = [];
+          snapshot.forEach((docSnap) => {
+            fetchedTasks.push({ id: docSnap.id, ...docSnap.data() } as TaskItem);
+          });
+          if (fetchedTasks.length > 0) {
+            set({ tasks: fetchedTasks });
+          }
+        });
+
+        const unsubLeaves = onSnapshot(collection(db, "leaves"), (snapshot) => {
+          const fetchedLeaves: LeaveRequest[] = [];
+          snapshot.forEach((docSnap) => {
+            fetchedLeaves.push({ id: docSnap.id, ...docSnap.data() } as LeaveRequest);
+          });
+          if (fetchedLeaves.length > 0) {
+            set({ leaveRequests: fetchedLeaves });
+          }
+        });
+
+        return () => {
+          unsubUsers();
+          unsubTasks();
+          unsubLeaves();
+        };
+      },
     }),
     {
-      name: "devtech-workspace-store-v5",
+      name: "devtech-workspace-store-v6",
       storage: createJSONStorage(() => localStorage),
     }
   )

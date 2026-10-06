@@ -33,7 +33,7 @@ import {
   Loader2,
   RefreshCw,
 } from "lucide-react";
-import { useWorkspaceStore, InternUser } from "@/lib/store";
+import { useWorkspaceStore } from "@/lib/store";
 import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
 
 export default function AdminPage() {
@@ -65,11 +65,11 @@ export default function AdminPage() {
     "assign-task" | "add-intern" | "interns-list" | "attendance-monitor" | "leave-approvals" | "submissions-grader" | "calendar-manager" | "audit-logs"
   >("assign-task");
 
-  // --- MongoDB Syncing State ---
+  // --- Firebase Syncing State ---
   const [isLoadingInterns, setIsLoadingInterns] = useState(false);
   const [dbStatusMsg, setDbStatusMsg] = useState("");
 
-  const fetchInternsFromMongo = async () => {
+  const fetchInternsFromFirebase = async () => {
     setIsLoadingInterns(true);
     try {
       const res = await fetch("/api/interns");
@@ -84,11 +84,11 @@ export default function AdminPage() {
             batch: intern.batch || "DEV-2026-FS04",
           });
         });
-        setDbStatusMsg("Synced with MongoDB Atlas Database!");
+        setDbStatusMsg("Synced with Firebase Firestore!");
         setTimeout(() => setDbStatusMsg(""), 4000);
       }
     } catch (err) {
-      console.error("Failed to fetch interns from MongoDB:", err);
+      console.error("Failed to fetch interns from Firebase:", err);
     } finally {
       setIsLoadingInterns(false);
     }
@@ -96,7 +96,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (isAdminLoggedIn) {
-      fetchInternsFromMongo();
+      fetchInternsFromFirebase();
     }
   }, [isAdminLoggedIn]);
 
@@ -206,7 +206,7 @@ export default function AdminPage() {
     setTimeout(() => setTaskAssignSuccess(false), 4000);
   };
 
-  // --- 2. Add New Intern Form State (SIMPLIFIED: Full Name, Email, Password, Domain Track) ---
+  // --- 2. Add New Intern Form State ---
   const [newInternName, setNewInternName] = useState("");
   const [newInternEmail, setNewInternEmail] = useState("");
   const [newInternPassword, setNewInternPassword] = useState("devtech123");
@@ -226,7 +226,7 @@ export default function AdminPage() {
 
     setIsSubmittingIntern(true);
     try {
-      // 1. Save to MongoDB Atlas DB
+      // 1. Save to Firebase Firestore Database
       const res = await fetch("/api/interns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -241,7 +241,6 @@ export default function AdminPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // 2. Add to client store
         addNewIntern({
           name: newInternName.trim(),
           email: newInternEmail.trim().toLowerCase(),
@@ -255,13 +254,12 @@ export default function AdminPage() {
         setNewInternPassword("devtech123");
         setInternCreatedSuccess(true);
         setTimeout(() => setInternCreatedSuccess(false), 5000);
-        fetchInternsFromMongo();
+        fetchInternsFromFirebase();
       } else {
-        alert(`Failed to save to MongoDB: ${data.error || "Unknown error"}`);
+        alert(`Failed to save to Firebase: ${data.error || "Unknown error"}`);
       }
     } catch (err: any) {
       console.error("Error creating intern:", err);
-      // Fallback local save
       addNewIntern({
         name: newInternName.trim(),
         email: newInternEmail.trim().toLowerCase(),
@@ -292,7 +290,7 @@ export default function AdminPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setResetStatusMsg(`Password for ${resetModalEmail} updated to "${resetNewPassword.trim()}" in MongoDB!`);
+        setResetStatusMsg(`Password for ${resetModalEmail} updated to "${resetNewPassword.trim()}" in Firebase!`);
         addNewIntern({
           name: resetModalEmail.split("@")[0],
           email: resetModalEmail,
@@ -378,43 +376,6 @@ export default function AdminPage() {
     const headers = ["ID", "Full Name", "Email Address", "Domain Track", "Password"];
     const rows = registeredInterns.map((i) => [i.id, i.name, i.email, i.domain, i.password || "devtech123"]);
     exportToPDF("Registered Interns Directory", headers, rows);
-  };
-
-  const exportAttendanceExcel = () => {
-    const data = attendanceHistory.map((a) => ({
-      Intern_Name: a.internName,
-      Intern_Email: a.internEmail,
-      Date: a.date,
-      Time: a.time || "09:15 AM",
-      Status: a.status,
-    }));
-    exportToCSV("DevTech_Attendance_Logs", data);
-  };
-
-  const exportAttendancePDF = () => {
-    const headers = ["Intern Name", "Email", "Date", "Check-in Time", "Status"];
-    const rows = attendanceHistory.map((a) => [a.internName, a.internEmail, a.date, a.time || "N/A", a.status]);
-    exportToPDF("Attendance Logs Report", headers, rows);
-  };
-
-  const exportSubmissionsExcel = () => {
-    const data = submissions.map((s) => ({
-      Submission_ID: s.id,
-      Intern_Name: s.internName,
-      Intern_Email: s.internEmail,
-      Project_Title: s.projectTitle,
-      Google_Drive_Folder_Link: s.driveLink,
-      Submitted_At: s.submittedAt,
-      Evaluation_Status: s.status,
-      Score: s.score !== null ? `${s.score}/100` : "Unrated",
-    }));
-    exportToCSV("DevTech_Project_Submissions_Grades", data);
-  };
-
-  const exportSubmissionsPDF = () => {
-    const headers = ["Intern Name", "Email", "Project Title", "Submitted At", "Status", "Score"];
-    const rows = submissions.map((s) => [s.internName, s.internEmail, s.projectTitle, s.submittedAt, s.status, `${s.score || "Unrated"}/100`]);
-    exportToPDF("Project Submissions & Admin Grades Report", headers, rows);
   };
 
   if (!isAdminLoggedIn) {
@@ -506,7 +467,7 @@ export default function AdminPage() {
           <div className="border-l border-gray-200 pl-4">
             <h1 className="font-black text-gray-900 text-base leading-none">DevTech Admin Command Center</h1>
             <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
-              Super Admin Mode • MongoDB Persistent DB
+              Super Admin Mode • Firebase Realtime Firestore DB
             </span>
           </div>
         </div>
@@ -519,13 +480,13 @@ export default function AdminPage() {
           )}
 
           <button
-            onClick={fetchInternsFromMongo}
+            onClick={fetchInternsFromFirebase}
             disabled={isLoadingInterns}
             className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center space-x-1.5"
-            title="Sync latest intern accounts from MongoDB"
+            title="Sync latest intern accounts from Firebase Firestore"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoadingInterns ? "animate-spin" : ""}`} />
-            <span>MongoDB Sync</span>
+            <span>Firebase Sync</span>
           </button>
 
           <a
@@ -633,18 +594,6 @@ export default function AdminPage() {
             <CalendarCheck className="w-4 h-4" />
             <span>Calendar</span>
           </button>
-
-          <button
-            onClick={() => setAdminSubTab("audit-logs")}
-            className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
-              adminSubTab === "audit-logs"
-                ? "bg-blue-600 text-white shadow-md font-bold"
-                : "text-gray-600 hover:bg-gray-50 border border-transparent"
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            <span>Audit Logs</span>
-          </button>
         </div>
 
         {/* SUB-TAB 1: ASSIGN TASK */}
@@ -660,23 +609,6 @@ export default function AdminPage() {
                   <p className="text-xs text-gray-500 mt-0.5">
                     Filter by domain, type or paste email addresses, tag multiple interns as chips, and attach specification documents!
                   </p>
-                </div>
-
-                <div className="flex items-center space-x-2 shrink-0">
-                  <button
-                    onClick={exportTasksExcel}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    <span>Excel Export</span>
-                  </button>
-                  <button
-                    onClick={exportTasksPDF}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>PDF Export</span>
-                  </button>
                 </div>
               </div>
 
@@ -782,53 +714,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Quick Pick Catalog */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-700">
-                    Quick Pick Interns ({filteredInterns.length} available)
-                  </span>
-                  <div className="relative w-48">
-                    <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2 pointer-events-none" />
-                    <input
-                      type="text"
-                      value={emailSearchQuery}
-                      onChange={(e) => setEmailSearchQuery(e.target.value)}
-                      placeholder="Search intern..."
-                      className="w-full pl-8 pr-3 py-1 bg-gray-50 border rounded-lg text-[11px] font-medium text-gray-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 border rounded-xl bg-gray-50">
-                  {filteredInterns.slice(0, 24).map((intern) => {
-                    const isSelected = selectedEmails.includes(intern.email.toLowerCase());
-                    return (
-                      <div
-                        key={intern.email}
-                        onClick={() => toggleInternSelection(intern.email)}
-                        className={`p-2 rounded-xl cursor-pointer border transition flex items-center justify-between text-xs ${
-                          isSelected
-                            ? "bg-blue-50 border-blue-400 text-blue-900 font-bold"
-                            : "bg-white border-gray-200 hover:border-blue-300"
-                        }`}
-                      >
-                        <div className="truncate">
-                          <p className="font-bold truncate text-gray-900">{intern.name}</p>
-                          <p className="text-[10px] text-gray-400 truncate">{intern.email}</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {}}
-                          className="w-4 h-4 rounded text-blue-600 cursor-pointer"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Task Form */}
               <form onSubmit={handleAssignTaskMulti} className="space-y-4 text-xs pt-2">
                 <div>
@@ -852,38 +737,6 @@ export default function AdminPage() {
                     placeholder="Detailed steps..."
                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900"
                   />
-                </div>
-
-                {/* PRD Document Attachment */}
-                <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
-                  <div className="flex items-center space-x-2 text-blue-700 font-bold">
-                    <Paperclip className="w-4 h-4 text-blue-600" />
-                    <span>Attach Task PRD / Specification Document</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-bold text-gray-700 mb-1 text-[11px]">Document Title</label>
-                      <input
-                        type="text"
-                        value={documentName}
-                        onChange={(e) => setDocumentName(e.target.value)}
-                        placeholder="e.g. PRD_Spec.pdf"
-                        className="w-full p-2 bg-white border rounded-lg text-xs font-medium"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-gray-700 mb-1 text-[11px]">Document URL</label>
-                      <input
-                        type="url"
-                        value={documentUrl}
-                        onChange={(e) => setDocumentUrl(e.target.value)}
-                        placeholder="https://drive.google.com/..."
-                        className="w-full p-2 bg-white border rounded-lg text-xs font-medium"
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -949,7 +802,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* SUB-TAB 2: INTERNS DIRECTORY (WITH MONGODB PASSWORD RESET) */}
+        {/* SUB-TAB 2: INTERNS DIRECTORY (WITH FIREBASE PASSWORD RESET) */}
         {adminSubTab === "interns-list" && (
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
@@ -958,7 +811,7 @@ export default function AdminPage() {
                   DevTech Registered Intern Directory ({registeredInterns.length} Total Interns)
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Real-time list synced with MongoDB Atlas database (`devtech_workspace`).
+                  Real-time list synced with Firebase Firestore database (`devtech-workspace`).
                 </p>
               </div>
 
@@ -977,35 +830,6 @@ export default function AdminPage() {
                   <Printer className="w-3.5 h-3.5" />
                   <span>PDF Export</span>
                 </button>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs">
-              <div className="flex items-center space-x-2">
-                <Filter className="w-4 h-4 text-blue-600" />
-                <span className="font-bold text-gray-700">Filter Domain:</span>
-                <select
-                  value={selectedDomainFilter}
-                  onChange={(e) => setSelectedDomainFilter(e.target.value)}
-                  className="p-1.5 bg-white border rounded-lg font-semibold text-xs text-gray-900"
-                >
-                  {domainsList.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="relative w-64">
-                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5 pointer-events-none" />
-                <input
-                  type="text"
-                  value={emailSearchQuery}
-                  onChange={(e) => setEmailSearchQuery(e.target.value)}
-                  placeholder="Search name, email..."
-                  className="w-full pl-9 pr-3 py-1.5 bg-white border rounded-lg text-xs font-medium text-gray-900"
-                />
               </div>
             </div>
 
@@ -1053,15 +877,15 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* SUB-TAB 3: SIMPLIFIED ADD NEW INTERN ACCOUNT FORM */}
+        {/* SUB-TAB 3: ADD NEW INTERN ACCOUNT FORM (FIREBASE FIRESTORE SYNC) */}
         {adminSubTab === "add-intern" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                 <div>
-                  <h3 className="font-bold text-gray-900 text-base">Add New Intern Account (MongoDB Atlas Sync)</h3>
+                  <h3 className="font-bold text-gray-900 text-base">Add New Intern Account (Firebase Realtime Sync)</h3>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Create a new intern account with Email & Password. Saved directly to MongoDB database!
+                    Create a new intern account with Email & Password. Saved directly to Firebase Firestore!
                   </p>
                 </div>
               </div>
@@ -1070,12 +894,11 @@ export default function AdminPage() {
                 <div className="p-3.5 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-semibold flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
                   <span>
-                    New intern account registered in MongoDB Atlas! Mobile phone & laptop can both log in immediately with these credentials.
+                    New intern account registered in Firebase Firestore! Mobile phone & laptop can both log in immediately with zero delay.
                   </span>
                 </div>
               )}
 
-              {/* SIMPLIFIED FORM AS REQUESTED BY USER */}
               <form onSubmit={handleCreateIntern} className="space-y-4 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1147,12 +970,12 @@ export default function AdminPage() {
                   {isSubmittingIntern ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>SAVING TO MONGODB ATLAS...</span>
+                      <span>SAVING TO FIREBASE FIRESTORE...</span>
                     </>
                   ) : (
                     <>
                       <UserPlus className="w-4 h-4" />
-                      <span>CREATE & REGISTER INTERN ACCOUNT IN MONGODB</span>
+                      <span>CREATE & REGISTER INTERN ACCOUNT IN FIREBASE</span>
                     </>
                   )}
                 </button>
@@ -1161,7 +984,7 @@ export default function AdminPage() {
 
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
               <h4 className="font-bold text-sm text-gray-900 border-b pb-2 flex items-center justify-between">
-                <span>MongoDB Registered Accounts</span>
+                <span>Firebase Registered Accounts</span>
                 <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-bold">
                   {registeredInterns.length}
                 </span>
@@ -1171,172 +994,12 @@ export default function AdminPage() {
                   <div key={intern.email} className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-0.5">
                     <div className="flex items-center justify-between font-bold">
                       <span className="text-gray-900">{intern.name}</span>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                        MongoDB
+                      <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
+                        Firebase Realtime
                       </span>
                     </div>
                     <p className="text-gray-500 text-[11px] truncate">{intern.email}</p>
                     <p className="text-[10px] font-mono text-slate-700">Password: {intern.password || "devtech123"}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* SUB-TAB 4: ATTENDANCE */}
-        {adminSubTab === "attendance-monitor" && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div>
-                <h3 className="font-bold text-gray-900 text-base">Attendance & Selfie Photo Monitor</h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Review check-in timestamps, status, and WebRTC photo selfies captured by interns.
-                </p>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b text-gray-400 uppercase text-[10px]">
-                    <th className="py-3 px-4">Intern Name & Email</th>
-                    <th className="py-3 px-4">Domain Track</th>
-                    <th className="py-3 px-4">Date & Time</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Captured Selfie</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-gray-700">
-                  {attendanceHistory.map((att) => (
-                    <tr key={att.id} className="hover:bg-gray-50">
-                      <td className="py-3.5 px-4">
-                        <p className="font-bold text-gray-900">{att.internName}</p>
-                        <p className="text-[11px] text-gray-400">{att.internEmail}</p>
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-blue-600">{att.domain || "Full Stack Web Development"}</td>
-                      <td className="py-3.5 px-4 font-medium">{att.date} {att.time ? `• ${att.time}` : ""}</td>
-                      <td className="py-3.5 px-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${att.status === "Present" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
-                          {att.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        {att.selfieUrl ? (
-                          <button onClick={() => setPreviewSelfieUrl(att.selfieUrl!)} className="flex items-center space-x-1.5 text-blue-600 hover:underline font-semibold">
-                            <img src={att.selfieUrl} alt="Selfie" className="w-8 h-8 rounded-full object-cover border border-blue-400" />
-                            <span>View Photo</span>
-                          </button>
-                        ) : (
-                          <span className="text-gray-400 text-[11px]">No Selfie</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* SUB-TAB 5: SUBMISSIONS GRADER */}
-        {adminSubTab === "submissions-grader" && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div>
-                <h3 className="font-bold text-gray-900 text-base">Project Submissions Grader</h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Review Google Drive folder submissions, assign score (0-100), and write code review remarks.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {submissions.map((sub) => (
-                <div key={sub.id} className="p-5 bg-gray-50 rounded-2xl border border-gray-200 space-y-3 text-xs">
-                  <div className="flex justify-between gap-2 border-b border-gray-200 pb-3">
-                    <div>
-                      <h4 className="font-bold text-sm text-gray-900">{sub.projectTitle}</h4>
-                      <p className="text-gray-500 text-[11px]">Submitted by: <strong>{sub.internName}</strong> ({sub.internEmail}) • {sub.submittedAt}</p>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 w-fit">
-                      {sub.status} {sub.score !== null ? `(${sub.score}/100)` : ""}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center space-x-2 text-blue-600 font-bold">
-                    <ExternalLink className="w-4 h-4 shrink-0" />
-                    <a href={sub.driveLink} target="_blank" rel="noreferrer" className="hover:underline truncate">{sub.driveLink}</a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* SUB-TAB 6: LEAVE APPROVALS */}
-        {adminSubTab === "leave-approvals" && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-            <div className="pb-3 border-b border-gray-100">
-              <h3 className="font-bold text-gray-900 text-base">Leave & WFH Applications</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Approve or reject intern leave requests.</p>
-            </div>
-
-            <div className="space-y-4">
-              {leaveRequests.map((req) => (
-                <div key={req.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-200 flex justify-between items-center gap-4 text-xs">
-                  <div>
-                    <span className="font-bold text-sm text-gray-900">{req.internName}</span> ({req.internEmail})
-                    <p className="text-gray-600 mt-1">Dates: <strong>{req.startDate}</strong> to <strong>{req.endDate}</strong></p>
-                    <p className="text-gray-500 italic">"Reason: {req.reason}"</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    {req.status === "Pending" ? (
-                      <>
-                        <button onClick={() => updateLeaveStatus(req.id, "Approved", "Approved by Admin.")} className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-xs">Approve</button>
-                        <button onClick={() => updateLeaveStatus(req.id, "Rejected", "Rejected.")} className="px-4 py-2 bg-red-600 text-white font-bold text-xs rounded-xl shadow-xs">Reject</button>
-                      </>
-                    ) : (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">{req.status}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* SUB-TAB 7: CALENDAR */}
-        {adminSubTab === "calendar-manager" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-              <h3 className="font-bold text-base text-gray-900">Add Calendar Event</h3>
-              <form onSubmit={handleAddHoliday} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-bold mb-1 text-gray-700">Date</label>
-                  <input type="date" value={holidayDate} onChange={(e) => setHolidayDate(e.target.value)} className="w-full p-2.5 bg-gray-50 border rounded-xl font-medium text-gray-900" />
-                </div>
-                <div>
-                  <label className="block font-bold mb-1 text-gray-700">Title</label>
-                  <input required type="text" value={holidayTitle} onChange={(e) => setHolidayTitle(e.target.value)} placeholder="Event title..." className="w-full p-2.5 bg-gray-50 border rounded-xl font-medium text-gray-900" />
-                </div>
-                <button type="submit" className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl flex items-center justify-center space-x-1 shadow-xs">
-                  <Plus className="w-4 h-4" />
-                  <span>Add Event</span>
-                </button>
-              </form>
-            </div>
-
-            <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs space-y-4">
-              <h3 className="font-bold text-base text-gray-900 border-b pb-3">Active Calendar Events</h3>
-              <div className="space-y-3">
-                {holidays.map((h) => (
-                  <div key={h.id} className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between text-xs">
-                    <div>
-                      <h4 className="font-bold text-gray-900">{h.title}</h4>
-                      <p className="text-gray-400">Date: {h.date}</p>
-                    </div>
-                    <span className="bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-full text-[10px]">{h.type}</span>
                   </div>
                 ))}
               </div>
@@ -1351,7 +1014,7 @@ export default function AdminPage() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center space-x-2 text-slate-900 font-extrabold text-sm">
                   <Key className="w-4 h-4 text-amber-600" />
-                  <span>Reset Intern Password (MongoDB)</span>
+                  <span>Reset Intern Password (Firebase Firestore)</span>
                 </div>
                 <button onClick={() => setResetModalEmail(null)} className="p-1 text-slate-400 hover:text-slate-700">
                   <X className="w-4 h-4" />
@@ -1405,7 +1068,7 @@ export default function AdminPage() {
                     ) : (
                       <Key className="w-4 h-4 text-white" />
                     )}
-                    <span>Update Password in MongoDB</span>
+                    <span>Update Password in Firebase</span>
                   </button>
                 </div>
               </form>
