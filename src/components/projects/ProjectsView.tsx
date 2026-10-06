@@ -21,9 +21,17 @@ export default function ProjectsView() {
   const allInternProjects = [
     ...myAssignedTasks.map((task) => {
       // Find submission and evaluation for this task if present
-      const sub = submissions.find(
-        (s) => s.internEmail.toLowerCase() === currentEmail.toLowerCase() && s.projectTitle.toLowerCase() === task.title.toLowerCase()
-      );
+      const sub = submissions.find((s) => {
+        const sEmail = (s.internEmail || "").trim().toLowerCase();
+        const sTitle = (s.projectTitle || "").trim().toLowerCase();
+        const tTitle = (task.title || "").trim().toLowerCase();
+        const isEmailMatch = !currentEmail || sEmail === currentEmail;
+        const isTitleMatch = sTitle === tTitle || sTitle.includes(tTitle) || tTitle.includes(sTitle);
+        return isEmailMatch && isTitleMatch;
+      }) || submissions.find((s) => {
+        const sEmail = (s.internEmail || "").trim().toLowerCase();
+        return !currentEmail || sEmail === currentEmail;
+      });
 
       return {
         id: task.id,
@@ -40,9 +48,14 @@ export default function ProjectsView() {
       };
     }),
     ...projects.map((p) => {
-      const sub = submissions.find(
-        (s) => s.internEmail.toLowerCase() === currentEmail.toLowerCase() && s.projectTitle.toLowerCase() === p.title.toLowerCase()
-      );
+      const sub = submissions.find((s) => {
+        const sEmail = (s.internEmail || "").trim().toLowerCase();
+        const sTitle = (s.projectTitle || "").trim().toLowerCase();
+        const pTitle = (p.title || "").trim().toLowerCase();
+        const isEmailMatch = !currentEmail || sEmail === currentEmail;
+        const isTitleMatch = sTitle === pTitle || sTitle.includes(pTitle) || pTitle.includes(sTitle);
+        return isEmailMatch && isTitleMatch;
+      });
       return {
         id: p.id,
         title: p.title,

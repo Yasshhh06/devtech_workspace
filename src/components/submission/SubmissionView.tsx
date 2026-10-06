@@ -5,12 +5,12 @@ import { Folder, Link2, AlertTriangle, CheckCircle2, Code2, Database, FileText, 
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function SubmissionView() {
-  const { tasks, projects, submissions, addSubmission, currentIntern } = useWorkspaceStore();
+  const { tasks, projects, submissions, addSubmission, currentIntern, currentUser } = useWorkspaceStore();
 
-  const currentEmail = currentIntern?.email || "";
+  const currentEmail = (currentIntern?.email || currentUser?.email || "").trim().toLowerCase();
 
   // Build dynamic list of assigned project & task titles for this intern
-  const myAssignedTasks = tasks.filter((t) => t.assignedToEmail.toLowerCase() === currentEmail.toLowerCase());
+  const myAssignedTasks = tasks.filter((t) => (t.assignedToEmail || "").toLowerCase().trim() === currentEmail);
   const projectOptions = Array.from(
     new Set([
       ...myAssignedTasks.map((t) => t.title),
@@ -24,7 +24,10 @@ export default function SubmissionView() {
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
 
   // Submissions submitted by the currently logged-in intern
-  const mySubmissions = submissions.filter((s) => s.internEmail.toLowerCase() === currentEmail.toLowerCase());
+  const mySubmissions = submissions.filter((s) => {
+    const sEmail = (s.internEmail || "").trim().toLowerCase();
+    return !currentEmail || sEmail === currentEmail;
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,52 +136,62 @@ export default function SubmissionView() {
           </h3>
 
           <div className="space-y-4">
-            {mySubmissions.map((sub) => (
-              <div
-                key={sub.id}
-                className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 text-xs"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">{sub.projectTitle}</h4>
-                    <p className="text-[11px] text-slate-500">Submitted at {sub.submittedAt}</p>
+            {mySubmissions.map((sub) => {
+              const hasScore = sub.score !== null && sub.score !== undefined;
+              return (
+                <div
+                  key={sub.id}
+                  className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 text-xs"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-sm">{sub.projectTitle}</h4>
+                      <p className="text-[11px] text-slate-500">Submitted at {sub.submittedAt}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[11px] font-bold ${
+                          sub.status === "Approved"
+                            ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                            : sub.status === "Needs Revision"
+                            ? "bg-red-100 text-red-800 border border-red-300"
+                            : "bg-amber-100 text-amber-800 border border-amber-300"
+                        }`}
+                      >
+                        {sub.status}
+                      </span>
+                      {hasScore && (
+                        <span className="px-3 py-1 bg-blue-600 text-white font-extrabold rounded-full text-xs shadow-xs">
+                          GRADE: {sub.score} / 100
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold w-fit ${
-                      sub.status === "Approved"
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : sub.status === "Needs Revision"
-                        ? "bg-red-50 text-red-700 border border-red-200"
-                        : "bg-amber-50 text-amber-700 border border-amber-200"
-                    }`}
-                  >
-                    {sub.status} {sub.score !== null && sub.score !== undefined ? `(${sub.score}/100)` : ""}
-                  </span>
-                </div>
 
-                <div className="flex items-center space-x-2 text-blue-600 font-bold">
-                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                  <a href={sub.driveLink} target="_blank" rel="noreferrer" className="hover:underline truncate">
-                    {sub.driveLink}
-                  </a>
-                </div>
+                  <div className="flex items-center space-x-2 text-blue-600 font-bold">
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                    <a href={sub.driveLink} target="_blank" rel="noreferrer" className="hover:underline truncate">
+                      {sub.driveLink}
+                    </a>
+                  </div>
 
-                {/* DISPLAY MENTOR REMARKS IF GRADED BY ADMIN */}
-                {sub.score !== null && sub.score !== undefined && (
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-                    <p className="font-extrabold text-emerald-900 flex items-center space-x-1.5">
-                      <Award className="w-4 h-4 text-emerald-600" />
-                      <span>Admin Grade Score: {sub.score} / 100</span>
-                    </p>
-                    {sub.mentorRemarks && (
-                      <p className="text-[11px] text-slate-700 italic">
-                        <strong>Mentor Remarks:</strong> "{sub.mentorRemarks}"
+                  {/* DISPLAY MENTOR REMARKS IF GRADED BY ADMIN */}
+                  {(hasScore || sub.mentorRemarks) && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl space-y-1">
+                      <p className="font-extrabold text-emerald-900 flex items-center space-x-1.5">
+                        <Award className="w-4 h-4 text-emerald-600" />
+                        <span>Admin Grade Score: {hasScore ? `${sub.score} / 100` : "Evaluation Complete"}</span>
                       </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+                      {sub.mentorRemarks && (
+                        <p className="text-[11px] text-slate-700 italic">
+                          <strong>Mentor Remarks & Feedback:</strong> "{sub.mentorRemarks}"
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
