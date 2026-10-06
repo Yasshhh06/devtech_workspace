@@ -22,8 +22,8 @@ export default function LeaveView() {
     }
 
     addLeaveRequest({
-      internName: currentIntern?.name || currentUser.name || "Mohite Yash",
-      internEmail: currentIntern?.email || currentUser.email || "mohiteyash940@gmail.com",
+      internName: currentIntern?.name || currentUser.name || "Intern",
+      internEmail: currentIntern?.email || currentUser.email || "",
       type,
       startDate,
       endDate,
@@ -42,20 +42,8 @@ export default function LeaveView() {
     }, 5000);
   };
 
-  // Preseeded default requests combined with state requests
-  const displayRequests: LeaveRequest[] = [
-    ...leaveRequests,
-    {
-      id: "default-wfh-1",
-      internName: currentIntern?.name || currentUser.name || "Mohite Yash",
-      internEmail: currentIntern?.email || currentUser.email || "mohiteyash940@gmail.com",
-      type: "Work From Home (WFH)",
-      startDate: "2026-10-14",
-      endDate: "2026-10-15",
-      reason: "Exam Prep",
-      status: "Approved",
-    },
-  ];
+  // State leave requests fetched from Firestore
+  const displayRequests: LeaveRequest[] = leaveRequests;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto font-sans pb-12">

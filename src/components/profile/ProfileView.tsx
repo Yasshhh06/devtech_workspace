@@ -5,9 +5,9 @@ import { User, Mail, Phone, School, Briefcase, Calendar, ShieldCheck, Check } fr
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function ProfileView() {
-  const { currentIntern, updateUserProfile } = useWorkspaceStore();
+  const { currentIntern, currentUser, updateUserProfile } = useWorkspaceStore();
 
-  const [name, setName] = useState(currentIntern?.name || "Mohite Yash");
+  const [name, setName] = useState(currentIntern?.name || currentUser?.name || "");
   const [mobile, setMobile] = useState("+91 9967053816");
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -59,7 +59,7 @@ export default function ProfileView() {
               <input
                 type="email"
                 readOnly
-                value={currentIntern?.email || "mohiteyash940@gmail.com"}
+                value={currentIntern?.email || currentUser.email || ""}
                 className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-semibold cursor-not-allowed"
               />
             </div>

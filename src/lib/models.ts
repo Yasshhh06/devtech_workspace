@@ -54,7 +54,7 @@ const TaskSchema = new Schema<ITask>({
   projectId: { type: String },
   status: { type: String, default: "in progress" },
   priority: { type: String, default: "MEDIUM Priority" },
-  assignedTo: { type: String, default: "mohiteyash940" },
+  assignedTo: { type: String, default: "" },
 });
 
 // 4. Attendance Schema

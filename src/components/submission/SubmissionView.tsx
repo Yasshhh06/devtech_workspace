@@ -7,7 +7,7 @@ import { useWorkspaceStore } from "@/lib/store";
 export default function SubmissionView() {
   const { tasks, projects, submissions, addSubmission, currentIntern } = useWorkspaceStore();
 
-  const currentEmail = currentIntern?.email || "mohiteyash940@gmail.com";
+  const currentEmail = currentIntern?.email || "";
 
   // Build dynamic list of assigned project & task titles for this intern
   const myAssignedTasks = tasks.filter((t) => t.assignedToEmail.toLowerCase() === currentEmail.toLowerCase());

@@ -22,21 +22,6 @@ export async function POST(req: Request) {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // Pre-seed default user if checking initial default intern mohiteyash940@gmail.com
-      if (cleanEmail === "mohiteyash940@gmail.com" && (cleanPassword === "devtech123" || cleanPassword === "yash0604")) {
-        const defaultUser = {
-          id: cleanEmail,
-          name: "Mohite Yash",
-          email: cleanEmail,
-          password: cleanPassword,
-          domain: "Full Stack Web Development",
-          batch: "DEV-2026-FS04",
-          role: "INTERN",
-        };
-        await setDoc(userRef, defaultUser);
-        return NextResponse.json({ success: true, data: defaultUser });
-      }
-
       return NextResponse.json(
         { success: false, error: "Invalid intern email or password! Please verify your login credentials or ask Admin to register your account." },
         { status: 401 }

@@ -7,15 +7,12 @@ import { useWorkspaceStore } from "@/lib/store";
 export default function DashboardView() {
   const { currentUser, currentIntern, projects, tasks, isCheckedIn, setActiveTab } = useWorkspaceStore();
 
-  const currentEmail = (currentIntern?.email || currentUser?.email || "mohiteyash940@gmail.com").trim().toLowerCase();
+  const currentEmail = (currentIntern?.email || currentUser?.email || "").trim().toLowerCase();
 
   // Filter tasks for current intern email or show all assigned tasks
-  const internTasks = tasks.length > 0
-    ? tasks
-    : tasks.filter((t) => {
-        const assigned = (t.assignedToEmail || "").trim().toLowerCase();
-        return assigned === currentEmail || assigned === "mohiteyash940@gmail.com";
-      });
+  const internTasks = currentEmail
+    ? tasks.filter((t) => (t.assignedToEmail || "").trim().toLowerCase() === currentEmail)
+    : tasks;
 
   return (
     <div className="space-y-6">

@@ -12,21 +12,7 @@ export async function GET() {
       interns.push(docSnap.data());
     });
 
-    // Seed default intern if collection is empty
-    if (interns.length === 0) {
-      const defaultRef = doc(db, "users", "mohiteyash940@gmail.com");
-      const defaultIntern = {
-        id: "mohiteyash940@gmail.com",
-        name: "Mohite Yash",
-        email: "mohiteyash940@gmail.com",
-        password: "devtech123",
-        role: "INTERN",
-        domain: "Full Stack Web Development",
-        batch: "DEV-2026-FS04",
-      };
-      await setDoc(defaultRef, defaultIntern);
-      interns.push(defaultIntern);
-    }
+
 
     return NextResponse.json({ success: true, data: interns });
   } catch (error: any) {

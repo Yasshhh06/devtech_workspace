@@ -91,7 +91,7 @@ export default function AdminView() {
   const [selectedDomainFilter, setSelectedDomainFilter] = useState<string>("All Domains");
   const [emailSearchQuery, setEmailSearchQuery] = useState<string>("");
   const [chipInputEmail, setChipInputEmail] = useState<string>("");
-  const [selectedEmails, setSelectedEmails] = useState<string[]>(["mohiteyash940@gmail.com"]);
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
 
   const [assignTitle, setAssignTitle] = useState("");
   const [assignDescription, setAssignDescription] = useState("");

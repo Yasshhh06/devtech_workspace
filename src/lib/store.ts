@@ -257,43 +257,54 @@ interface WorkspaceState {
   initFirebaseRealtimeSync: () => () => void;
 }
 
-const initialInternsList: InternUser[] = [
-  {
-    id: "mohiteyash940@gmail.com",
-    name: "Mohite Yash",
-    email: "mohiteyash940@gmail.com",
-    password: "devtech123",
-    batch: "DEV-2026-FS04",
-    domain: "Full Stack Web Development",
-    college: "COEP Pune",
-    mentor: "Rahul Sharma",
-  },
-];
+const initialInternsList: InternUser[] = [];
 
 export const useWorkspaceStore = create<WorkspaceState>()(
   persist(
     (set, get) => ({
-      isAdminLoggedIn: true,
+      isAdminLoggedIn: false,
       activeRole: "intern",
       setActiveRole: (role) => set({ activeRole: role }),
 
       adminLogin: (username, password) => {
-        if (username === "admin" && (password === "devtechadmin123" || password === "admin")) {
+        const cleanUser = username.trim();
+        const cleanPass = password.trim();
+
+        if (
+          (cleanUser.toLowerCase() === "yasshhh" || cleanUser.toLowerCase() === "admin") &&
+          cleanPass === "DevTech@#2004"
+        ) {
           set({ isAdminLoggedIn: true });
           get().addAuditLog("Admin Logged In", "Authentication");
+
+          // Save/Update Admin account into Firebase Firestore users collection
+          setDoc(
+            doc(db, "users", "admin_yasshhh"),
+            {
+              id: "admin_yasshhh",
+              name: "Yasshhh Admin",
+              username: "Yasshhh",
+              email: "yasshhh@devtechit.com",
+              password: "DevTech@#2004",
+              role: "ADMIN",
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          ).catch((err) => console.error("Firebase admin sync error:", err));
+
           return true;
         }
         return false;
       },
       adminLogout: () => set({ isAdminLoggedIn: false }),
 
-      isInternLoggedIn: true,
-      currentIntern: initialInternsList[0],
+      isInternLoggedIn: false,
+      currentIntern: null,
       currentUser: {
-        name: "Mohite Yash",
-        username: "mohiteyash940",
-        email: "mohiteyash940@gmail.com",
-        role: "Devtech Software Intern",
+        name: "Intern User",
+        username: "intern",
+        email: "",
+        role: "DevTech Software Intern",
         mobile: "+91 9967053816",
         workspaceName: "DevTech Workspace",
         workspaceCount: 1,
@@ -372,8 +383,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
         const todayStr = "2026-10-06";
-        const currentEmail = get().currentIntern?.email || "mohiteyash940@gmail.com";
-        const currentName = get().currentIntern?.name || "Mohite Yash";
+        const currentEmail = get().currentIntern?.email || get().currentUser?.email || "";
+        const currentName = get().currentIntern?.name || get().currentUser?.name || "Intern";
 
         const newRecord: AttendanceRecord = {
           id: `att-${Date.now()}`,
@@ -466,8 +477,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setSubmissions: (submissions) => set({ submissions }),
 
       addSubmission: (projectTitle, driveLink, adminNote) => {
-        const internName = get().currentIntern?.name || "Mohite Yash";
-        const internEmail = get().currentIntern?.email || "mohiteyash940@gmail.com";
+        const internName = get().currentIntern?.name || get().currentUser?.name || "Intern";
+        const internEmail = get().currentIntern?.email || get().currentUser?.email || "";
         const subRecord: ProjectSubmission = {
           id: `sub-${Date.now()}`,
           internName,

@@ -10,15 +10,12 @@ export default function ProjectsView() {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterPriority, setFilterPriority] = useState("ALL");
 
-  const currentEmail = (currentIntern?.email || currentUser?.email || "mohiteyash940@gmail.com").trim().toLowerCase();
+  const currentEmail = (currentIntern?.email || currentUser?.email || "").trim().toLowerCase();
 
   // Filter tasks assigned to current intern or include all tasks assigned by admin so none are hidden
-  const myAssignedTasks = tasks.length > 0
-    ? tasks
-    : tasks.filter((t) => {
-      const assigned = (t.assignedToEmail || "").trim().toLowerCase();
-      return assigned === currentEmail || assigned === "mohiteyash940@gmail.com";
-    });
+  const myAssignedTasks = currentEmail
+    ? tasks.filter((t) => (t.assignedToEmail || "").trim().toLowerCase() === currentEmail)
+    : tasks;
 
   // Combined project items including default projects + tasks assigned by Admin
   const allInternProjects = [

@@ -56,8 +56,8 @@ export default function AdminPage() {
   } = useWorkspaceStore();
 
   // Admin Auth State
-  const [adminUser, setAdminUser] = useState("admin");
-  const [adminPass, setAdminPass] = useState("devtechadmin123");
+  const [adminUser, setAdminUser] = useState("");
+  const [adminPass, setAdminPass] = useState("");
   const [loginError, setLoginError] = useState(false);
 
   // Sub Tab Navigation State
@@ -114,7 +114,7 @@ export default function AdminPage() {
   const [selectedDomainFilter, setSelectedDomainFilter] = useState<string>("All Domains");
   const [emailSearchQuery, setEmailSearchQuery] = useState<string>("");
   const [chipInputEmail, setChipInputEmail] = useState<string>("");
-  const [selectedEmails, setSelectedEmails] = useState<string[]>(["mohiteyash940@gmail.com"]);
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
 
   const [assignTitle, setAssignTitle] = useState("");
   const [assignDescription, setAssignDescription] = useState("");
@@ -394,7 +394,7 @@ export default function AdminPage() {
 
           {loginError && (
             <div className="p-3 bg-red-50 text-red-700 rounded-xl text-xs font-semibold text-center border border-red-200">
-              Invalid Username or Password! (Default: admin / devtechadmin123)
+              Invalid Admin Username or Password! Please verify your credentials.
             </div>
           )}
 
@@ -408,7 +408,7 @@ export default function AdminPage() {
                   required
                   value={adminUser}
                   onChange={(e) => setAdminUser(e.target.value)}
-                  placeholder="admin"
+                  placeholder="Enter Username (e.g. Yasshhh)"
                   className="w-full pl-9 pr-4 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold text-gray-900"
                 />
               </div>
@@ -423,7 +423,7 @@ export default function AdminPage() {
                   required
                   value={adminPass}
                   onChange={(e) => setAdminPass(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Enter Admin Password"
                   className="w-full pl-9 pr-4 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold text-gray-900"
                 />
               </div>
@@ -437,18 +437,6 @@ export default function AdminPage() {
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
-
-          <div className="pt-2 border-t border-gray-100 text-center">
-            <button
-              onClick={() => {
-                setAdminUser("admin");
-                setAdminPass("devtechadmin123");
-              }}
-              className="text-[11px] text-blue-600 font-bold hover:underline"
-            >
-              Auto-fill Credentials (admin / devtechadmin123)
-            </button>
-          </div>
         </div>
       </div>
     );
