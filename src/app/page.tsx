@@ -11,7 +11,6 @@ import CalendarView from "@/components/calendar/CalendarView";
 import LeaveView from "@/components/leave/LeaveView";
 import SubmissionView from "@/components/submission/SubmissionView";
 import TermsView from "@/components/terms/TermsView";
-import NdaView from "@/components/nda/NdaView";
 import SettingsView from "@/components/settings/SettingsView";
 import AdminView from "@/components/admin/AdminView";
 import { useWorkspaceStore } from "@/lib/store";
@@ -60,8 +59,6 @@ export default function Home() {
         return <SubmissionView />;
       case "terms":
         return <TermsView />;
-      case "nda":
-        return <NdaView />;
       case "settings":
         return <SettingsView />;
       case "admin":
