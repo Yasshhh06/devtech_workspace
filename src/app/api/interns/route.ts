@@ -9,20 +9,23 @@ export async function GET() {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    // Fetch all registered interns from MongoDB
-    let interns = await User.find({ role: "INTERN" }).sort({ createdAt: -1 });
+    // Fetch all registered intern users from MongoDB Atlas
+    let interns = await User.find({}).sort({ createdAt: -1 });
 
-    // Pre-seed default intern if database has no interns yet
     if (interns.length === 0) {
-      const defaultIntern = await User.create({
-        name: "Mohite Yash",
-        email: "mohiteyash940@gmail.com",
-        password: "devtech123",
-        role: "INTERN",
-        domain: "Full Stack Web Development",
-        batch: "DEV-2026-FS04",
-        isActive: true,
-      });
+      const defaultIntern = await User.findOneAndUpdate(
+        { email: "mohiteyash940@gmail.com" },
+        {
+          name: "Mohite Yash",
+          email: "mohiteyash940@gmail.com",
+          password: "devtech123",
+          role: "INTERN",
+          domain: "Full Stack Web Development",
+          batch: "DEV-2026-FS04",
+          isActive: true,
+        },
+        { upsert: true, new: true }
+      );
       interns = [defaultIntern];
     }
 
@@ -55,29 +58,22 @@ export async function POST(req: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Check if user already exists in MongoDB
-    const existing = await User.findOne({ email: cleanEmail });
-    if (existing) {
-      existing.name = name.trim();
-      existing.password = password.trim();
-      existing.domain = domain || existing.domain || "Full Stack Web Development";
-      existing.role = "INTERN";
-      await existing.save();
-      return NextResponse.json({ success: true, data: existing, updated: true });
-    }
+    // Create or update intern document in MongoDB Atlas devtech_workspace DB
+    const intern = await User.findOneAndUpdate(
+      { email: cleanEmail },
+      {
+        name: name.trim(),
+        email: cleanEmail,
+        password: password.trim(),
+        domain: domain || "Full Stack Web Development",
+        role: "INTERN",
+        batch: "DEV-2026-FS04",
+        isActive: true,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    // Create new intern document in MongoDB devtech_workspace DB
-    const newIntern = await User.create({
-      name: name.trim(),
-      email: cleanEmail,
-      password: password.trim(),
-      domain: domain || "Full Stack Web Development",
-      role: "INTERN",
-      batch: "DEV-2026-FS04",
-      isActive: true,
-    });
-
-    return NextResponse.json({ success: true, data: newIntern });
+    return NextResponse.json({ success: true, data: intern });
   } catch (error: any) {
     console.error("Error creating intern in MongoDB:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
