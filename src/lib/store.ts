@@ -30,6 +30,7 @@ export interface InternUser {
   name: string;
   email: string;
   password?: string;
+  mobile?: string;
   batch: string;
   domain: string;
   college?: string;
@@ -184,7 +185,7 @@ interface WorkspaceState {
     workspaceName: string;
     workspaceCount: number;
   };
-  internLogin: (email: string, password: string) => boolean;
+  internLogin: (email: string, password: string, userObj?: InternUser) => boolean;
   internLogout: () => void;
 
   activeTab: NavTab;
@@ -301,20 +302,27 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       isInternLoggedIn: false,
       currentIntern: null,
       currentUser: {
-        name: "Intern User",
-        username: "intern",
+        name: "",
+        username: "",
         email: "",
         role: "DevTech Software Intern",
-        mobile: "+91 9967053816",
+        mobile: "",
         workspaceName: "DevTech Workspace",
         workspaceCount: 1,
       },
 
-      internLogin: (email, password) => {
+      internLogin: (email, password, userObj) => {
         const cleanEmail = email.toLowerCase().trim();
-        const found = get().registeredInterns.find(
+        let found = get().registeredInterns.find(
           (i) => i.email.toLowerCase() === cleanEmail
         );
+
+        if (!found && userObj) {
+          found = userObj;
+          const existing = get().registeredInterns.filter((i) => i.email.toLowerCase() !== cleanEmail);
+          set({ registeredInterns: [userObj, ...existing] });
+        }
+
         if (found) {
           if (found.password && password && found.password !== password) {
             return false;
@@ -324,10 +332,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             currentIntern: found,
             currentUser: {
               name: found.name,
-              username: found.email.split("@")[0],
+              username: found.name || found.email.split("@")[0],
               email: found.email,
-              role: `${found.domain} Intern`,
-              mobile: "+91 9967053816",
+              role: `${found.domain || "Software"} Intern`,
+              mobile: found.mobile || "",
               workspaceName: "DevTech Workspace",
               workspaceCount: 1,
             },
@@ -337,7 +345,20 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         }
         return false;
       },
-      internLogout: () => set({ isInternLoggedIn: false, currentIntern: null }),
+      internLogout: () =>
+        set({
+          isInternLoggedIn: false,
+          currentIntern: null,
+          currentUser: {
+            name: "",
+            username: "",
+            email: "",
+            role: "Intern",
+            mobile: "",
+            workspaceName: "DevTech Workspace",
+            workspaceCount: 1,
+          },
+        }),
 
       activeTab: "dashboard",
       setActiveTab: (tab) => set({ activeTab: tab }),
@@ -354,6 +375,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           id: cleanEmail,
           ...newIntern,
           email: cleanEmail,
+          mobile: newIntern.mobile || "",
         };
 
         const existingFiltered = get().registeredInterns.filter((i) => i.email.toLowerCase() !== cleanEmail);
@@ -367,6 +389,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           password: created.password || "devtech123",
           domain: created.domain || "Full Stack Web Development",
           batch: created.batch || "DEV-2026-FS04",
+          mobile: created.mobile || "",
           role: "INTERN",
         }, { merge: true }).catch(err => console.error("Firebase sync error:", err));
 
@@ -409,11 +432,21 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         get().addAuditLog(`Marked attendance for ${currentEmail}`, "Attendance");
       },
 
-      updateUserProfile: (displayName, mobile) =>
+      updateUserProfile: (displayName, mobile) => {
         set((state) => ({
-          currentIntern: state.currentIntern ? { ...state.currentIntern, name: displayName } : null,
+          currentIntern: state.currentIntern ? { ...state.currentIntern, name: displayName, mobile } : null,
           currentUser: { ...state.currentUser, username: displayName, name: displayName, mobile },
-        })),
+        }));
+
+        const currentEmail = get().currentIntern?.email || get().currentUser?.email;
+        if (currentEmail) {
+          updateDoc(doc(db, "users", currentEmail.toLowerCase().trim()), {
+            name: displayName,
+            mobile: mobile,
+            updatedAt: new Date().toISOString(),
+          }).catch((err) => console.error("Error updating user profile in Firestore:", err));
+        }
+      },
 
       projects: [],
 
@@ -635,6 +668,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 password: data.password || "devtech123",
                 batch: data.batch || "DEV-2026-FS04",
                 domain: data.domain || "Full Stack Web Development",
+                mobile: data.mobile || "",
               });
             }
           });

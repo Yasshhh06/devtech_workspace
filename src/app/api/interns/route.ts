@@ -24,7 +24,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, password, domain } = body;
+    const { name, email, password, domain, mobile } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -43,6 +43,7 @@ export async function POST(req: Request) {
       password: password.trim(),
       domain: domain || "Full Stack Web Development",
       batch: "DEV-2026-FS04",
+      mobile: mobile ? mobile.trim() : "",
       role: "INTERN",
     };
 

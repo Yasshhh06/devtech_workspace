@@ -46,6 +46,7 @@ export async function POST(req: Request) {
         email: userData.email,
         domain: userData.domain || "Full Stack Web Development",
         batch: userData.batch || "DEV-2026-FS04",
+        mobile: userData.mobile || "",
         role: userData.role || "INTERN",
       },
     });

@@ -5,7 +5,7 @@ import { Settings, User, Shield, Bell, Edit3, Check, X } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function SettingsView() {
-  const { currentUser, updateUserProfile } = useWorkspaceStore();
+  const { currentIntern, currentUser, updateUserProfile } = useWorkspaceStore();
   const [activeSubTab, setActiveSubTab] = useState<"profile" | "account" | "notifications">("profile");
 
   // Edit states for Display Name and Mobile
@@ -145,7 +145,9 @@ export default function SettingsView() {
                     className="px-3 py-1 text-xs bg-white border border-blue-600 rounded-lg focus:outline-none text-slate-900 font-bold"
                   />
                 ) : (
-                  <span className="text-xs font-bold text-slate-800">{currentUser.mobile}</span>
+                  <span className="text-xs font-bold text-slate-800">
+                    {currentUser.mobile || currentIntern?.mobile || "Not Provided (Click Edit to add)"}
+                  </span>
                 )}
               </div>
 

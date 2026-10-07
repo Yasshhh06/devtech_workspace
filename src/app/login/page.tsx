@@ -23,7 +23,7 @@ export default function LoginPage() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    // 1. First check local state for instant response
+    // 1. First check local state for instant response if user already present
     const localOk = internLogin(cleanEmail, cleanPassword);
     if (localOk) {
       router.push("/");
@@ -32,7 +32,7 @@ export default function LoginPage() {
     }
 
     try {
-      // 2. Query MongoDB API backend
+      // 2. Query Firebase Firestore via auth API
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -42,26 +42,26 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok && data.success && data.data) {
-        // Sync user to client state
-        addNewIntern({
+        const userObj = {
+          id: data.data.id || cleanEmail,
           name: data.data.name,
           email: data.data.email,
           password: cleanPassword,
           domain: data.data.domain || "Full Stack Web Development",
           batch: data.data.batch || "DEV-2026-FS04",
-        });
+          mobile: data.data.mobile || "",
+        };
 
-        const ok = internLogin(data.data.email, cleanPassword);
+        const ok = internLogin(data.data.email, cleanPassword, userObj);
         if (ok) {
           router.push("/");
           return;
         }
       } else {
-        setErrorMsg("Invalid Intern Email or Password! Please verify your login credentials or ask Admin to register your account.");
+        setErrorMsg(data.error || "Invalid Intern Email or Password! Please verify your login credentials or ask Admin to register your account.");
       }
     } catch (err: any) {
-      console.warn("MongoDB API check exception:", err);
-      // Final fallback check
+      console.warn("API check exception:", err);
       const ok = internLogin(cleanEmail, cleanPassword);
       if (ok) {
         router.push("/");

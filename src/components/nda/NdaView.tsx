@@ -3,7 +3,11 @@
 import React from "react";
 import { ShieldCheck, CheckCircle2 } from "lucide-react";
 
+import { useWorkspaceStore } from "@/lib/store";
+
 export default function NdaView() {
+  const { currentIntern, currentUser } = useWorkspaceStore();
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto font-sans">
       <h1 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
@@ -21,7 +25,7 @@ export default function NdaView() {
         </div>
 
         <p>
-          This Non-Disclosure Agreement ("Agreement") is entered into by and between <strong>Devtech IT Solution</strong> and the undersigned Intern <strong>Mohite Yash</strong>.
+          This Non-Disclosure Agreement ("Agreement") is entered into by and between <strong>Devtech IT Solution</strong> and the undersigned Intern <strong>{currentIntern?.name || currentUser?.name || "Intern Account"}</strong>.
         </p>
 
         <p>

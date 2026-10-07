@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   description: "Official Devtech IT Solution Enterprise Workspace Platform - Projects, Attendance, Calendar, Standups & Team Group.",
 };
 
+import FirebaseSyncInitializer from "@/components/FirebaseSyncInitializer";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -20,7 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={jakarta.className}>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <FirebaseSyncInitializer />
+        {children}
+      </body>
     </html>
   );
 }

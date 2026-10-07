@@ -8,7 +8,7 @@ export default function ProfileView() {
   const { currentIntern, currentUser, updateUserProfile } = useWorkspaceStore();
 
   const [name, setName] = useState(currentIntern?.name || currentUser?.name || "");
-  const [mobile, setMobile] = useState("+91 9967053816");
+  const [mobile, setMobile] = useState(currentIntern?.mobile || currentUser?.mobile || "");
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -22,10 +22,10 @@ export default function ProfileView() {
     <div className="space-y-6 max-w-4xl mx-auto font-sans pb-12">
       <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white rounded-2xl p-6 shadow-xl flex items-center space-x-4">
         <div className="w-16 h-16 rounded-2xl bg-white text-blue-600 flex items-center justify-center font-bold text-2xl shadow-lg shrink-0">
-          {currentIntern?.name?.charAt(0) || "M"}
+          {(currentIntern?.name || currentUser?.name || "I").charAt(0).toUpperCase()}
         </div>
         <div>
-          <h1 className="text-2xl font-extrabold">{currentIntern?.name || "Mohite Yash"}</h1>
+          <h1 className="text-2xl font-extrabold">{currentIntern?.name || currentUser?.name || "Intern Account"}</h1>
           <p className="text-xs text-blue-100 mt-0.5">
             {currentIntern?.domain || "Full Stack Web Development"} Intern • ID: DTS-FSD-INT-000265
           </p>

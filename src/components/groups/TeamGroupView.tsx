@@ -3,19 +3,24 @@
 import React, { useState } from "react";
 import { Users, Search, MessageSquare, Send } from "lucide-react";
 
+import { useWorkspaceStore } from "@/lib/store";
+
 export default function TeamGroupView() {
+  const { currentIntern, currentUser } = useWorkspaceStore();
+  const currentName = currentIntern?.name || currentUser?.name || "Intern User";
+
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [chatMessage, setChatMessage] = useState("");
   const [messages, setMessages] = useState([
     { sender: "Vikram Lead Mentor", time: "10:15 AM", text: "Welcome team to Batch 73FMBF! Please check your assigned tasks on the dashboard." },
     { sender: "Neha Kulkarni", time: "10:20 AM", text: "Thanks Vikram! Working on the Fund Analytics module." },
-    { sender: "Mohite Yash", time: "10:30 AM", text: "Hello everyone! Ready for today's standup." },
+    { sender: currentName, time: "10:30 AM", text: "Hello everyone! Ready for today's standup." },
   ]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
-    setMessages([...messages, { sender: "Mohite Yash", time: "Just now", text: chatMessage }]);
+    setMessages([...messages, { sender: currentName, time: "Just now", text: chatMessage }]);
     setChatMessage("");
   };
 

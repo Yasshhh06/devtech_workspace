@@ -5,7 +5,8 @@ import { Award, CheckCircle2, Download, ShieldCheck, ExternalLink, Sparkles } fr
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function CertificateView() {
-  const { currentIntern, certificates } = useWorkspaceStore();
+  const { currentIntern, currentUser } = useWorkspaceStore();
+  const internName = currentIntern?.name || currentUser?.name || "Intern Account";
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto font-sans pb-12">
@@ -15,7 +16,7 @@ export default function CertificateView() {
         </div>
         <h1 className="text-2xl font-extrabold">DevTech Verified Internship Certificate</h1>
         <p className="text-xs text-blue-100 max-w-md mx-auto">
-          Official completion certificate for {currentIntern?.name || "Mohite Yash"} ({currentIntern?.domain}).
+          Official completion certificate for {internName} ({currentIntern?.domain || "Software Track"}).
         </p>
       </div>
 
@@ -55,7 +56,7 @@ export default function CertificateView() {
 
         <div className="py-2">
           <h3 className="text-2xl font-extrabold text-blue-600 underline decoration-amber-400 underline-offset-8">
-            {currentIntern?.name || "Mohite Yash"}
+            {internName}
           </h3>
           <p className="text-xs font-semibold text-slate-700 mt-2">
             for successfully completing the internship program in <strong>{currentIntern?.domain || "Full Stack Web Development"}</strong>.

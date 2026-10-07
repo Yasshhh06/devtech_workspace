@@ -182,6 +182,7 @@ export default function AdminView() {
   const [newInternEmail, setNewInternEmail] = useState("");
   const [newInternPassword, setNewInternPassword] = useState("devtech123");
   const [newInternDomain, setNewInternDomain] = useState("Full Stack Web Development");
+  const [newInternMobile, setNewInternMobile] = useState("");
   const [isSubmittingIntern, setIsSubmittingIntern] = useState(false);
   const [internCreatedSuccess, setInternCreatedSuccess] = useState(false);
 
@@ -205,6 +206,7 @@ export default function AdminView() {
           email: newInternEmail.trim(),
           password: newInternPassword.trim(),
           domain: newInternDomain,
+          mobile: newInternMobile.trim(),
         }),
       });
 
@@ -216,12 +218,14 @@ export default function AdminView() {
           email: newInternEmail.trim(),
           password: newInternPassword.trim(),
           domain: newInternDomain,
+          mobile: newInternMobile.trim(),
           batch: "DEV-2026-FS04",
         });
 
         setNewInternName("");
         setNewInternEmail("");
         setNewInternPassword("devtech123");
+        setNewInternMobile("");
         setInternCreatedSuccess(true);
         setTimeout(() => setInternCreatedSuccess(false), 5000);
       }
@@ -855,6 +859,19 @@ export default function AdminView() {
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  WhatsApp / Contact Mobile Number (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newInternMobile}
+                  onChange={(e) => setNewInternMobile(e.target.value)}
+                  placeholder="e.g. +91 9876543210"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
               </div>
 
               <button
