@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Clock,
   LogOut,
+  Bell,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useWorkspaceStore, NavTab } from "@/lib/store";
@@ -39,6 +40,7 @@ export default function Sidebar() {
     { id: "projects", label: "Projects", icon: <FolderKanban className="w-4 h-4" /> },
     { id: "attendance", label: "Attendance", icon: <CalendarCheck className="w-4 h-4" /> },
     { id: "calendar", label: "Calendar", icon: <Calendar className="w-4 h-4" /> },
+    { id: "notifications", label: "Notifications", icon: <Bell className="w-4 h-4" /> },
     { id: "leave", label: "Leave / WFH", icon: <UserX className="w-4 h-4" /> },
     { id: "submission", label: "Submission", icon: <Send className="w-4 h-4" /> },
     { id: "terms", label: "Terms & Conditions", icon: <FileText className="w-4 h-4" /> },

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, doc, setDoc, updateDoc, addDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc } from "firebase/firestore";
 
 export type NavTab = 
   | "dashboard"
@@ -24,6 +24,17 @@ export type NavTab =
   | "notifications"
   | "certificate"
   | "profile";
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  content: string;
+  category: "Task Assignment" | "Announcement" | "Deadline" | "General" | "Urgent";
+  targetEmails: string[];
+  sender: string;
+  createdAt: string;
+  readByEmails?: string[];
+}
 
 export interface InternUser {
   id: string;
@@ -241,6 +252,14 @@ interface WorkspaceState {
   holidays: CalendarHoliday[];
   setHolidays: (holidays: CalendarHoliday[]) => void;
   addHoliday: (holiday: Omit<CalendarHoliday, "id">) => void;
+  deleteHoliday: (id: string) => void;
+
+  // Notifications Store
+  notifications: NotificationItem[];
+  setNotifications: (notifications: NotificationItem[]) => void;
+  sendNotification: (notif: Omit<NotificationItem, "id" | "createdAt" | "readByEmails">) => void;
+  markNotificationAsRead: (id: string, userEmail: string) => void;
+  deleteNotification: (id: string) => void;
 
   // Additional Modules Store
   assessments: AssessmentItem[];
@@ -662,6 +681,61 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         get().addAuditLog(`Added holiday: ${holidayData.title}`, "Calendar");
       },
 
+      deleteHoliday: (id) => {
+        set((state) => ({
+          holidays: state.holidays.filter((h) => h.id !== id),
+        }));
+        deleteDoc(doc(db, "holidays", id)).catch((err) => console.error("Error deleting holiday from Firestore:", err));
+        get().addAuditLog(`Deleted holiday ${id}`, "Calendar");
+      },
+
+      notifications: [],
+      setNotifications: (notifications) => set({ notifications }),
+
+      sendNotification: (notifData) => {
+        const customId = `notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+        const notifObj: NotificationItem = {
+          id: customId,
+          ...notifData,
+          createdAt: new Date().toLocaleString(),
+          readByEmails: [],
+        };
+
+        set((state) => ({
+          notifications: [notifObj, ...state.notifications.filter((n) => n.id !== customId)],
+        }));
+
+        setDoc(doc(db, "notifications", customId), notifObj, { merge: true }).catch((err) =>
+          console.error("Error saving notification to Firestore:", err)
+        );
+        get().addAuditLog(`Sent notification "${notifData.title}"`, "Notifications");
+      },
+
+      markNotificationAsRead: (id, userEmail) => {
+        const cleanEmail = userEmail.toLowerCase().trim();
+        const targetNotif = get().notifications.find((n) => n.id === id);
+        if (!targetNotif) return;
+
+        const updatedReadBy = Array.from(new Set([...(targetNotif.readByEmails || []), cleanEmail]));
+
+        set((state) => ({
+          notifications: state.notifications.map((n) =>
+            n.id === id ? { ...n, readByEmails: updatedReadBy } : n
+          ),
+        }));
+
+        updateDoc(doc(db, "notifications", id), {
+          readByEmails: updatedReadBy,
+        }).catch((err) => console.error("Error updating notification read status in Firestore:", err));
+      },
+
+      deleteNotification: (id) => {
+        set((state) => ({
+          notifications: state.notifications.filter((n) => n.id !== id),
+        }));
+        deleteDoc(doc(db, "notifications", id)).catch((err) => console.error("Error deleting notification from Firestore:", err));
+      },
+
       assessments: [],
       announcements: [],
       resources: [],
@@ -684,7 +758,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         }, ...state.auditLogs],
       })),
 
-      // Realtime Listener across ALL 6 Firebase Firestore collections
+      // Realtime Listener across ALL Firebase Firestore collections
       initFirebaseRealtimeSync: () => {
         const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
           const fetched: InternUser[] = [];
@@ -758,6 +832,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           set({ holidays: fetchedHols });
         });
 
+        const unsubNotifications = onSnapshot(collection(db, "notifications"), (snapshot) => {
+          const fetchedNotifs: NotificationItem[] = [];
+          snapshot.forEach((docSnap) => {
+            fetchedNotifs.push({ ...docSnap.data(), id: docSnap.id } as NotificationItem);
+          });
+          set({ notifications: fetchedNotifs });
+        });
+
         return () => {
           unsubUsers();
           unsubTasks();
@@ -765,6 +847,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           unsubSubmissions();
           unsubLeaves();
           unsubHolidays();
+          unsubNotifications();
         };
       },
     }),

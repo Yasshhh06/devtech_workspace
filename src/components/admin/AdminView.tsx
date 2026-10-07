@@ -21,8 +21,11 @@ import {
   Camera,
   ExternalLink,
   Award,
+  Bell,
+  Trash2,
+  Megaphone,
 } from "lucide-react";
-import { useWorkspaceStore, InternUser, TaskItem, ProjectSubmission, LeaveRequest } from "@/lib/store";
+import { useWorkspaceStore, InternUser, TaskItem, ProjectSubmission, LeaveRequest, NotificationItem } from "@/lib/store";
 import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
 
 export default function AdminView() {
@@ -38,11 +41,23 @@ export default function AdminView() {
     evaluateSubmission,
     holidays,
     addHoliday,
+    deleteHoliday,
+    notifications,
+    sendNotification,
+    deleteNotification,
     auditLogs,
   } = useWorkspaceStore();
 
   const [activeAdminSubTab, setActiveAdminSubTab] = useState<
-    "assign-task" | "add-intern" | "interns-catalog" | "attendance-monitor" | "leave-approvals" | "submissions-grader" | "calendar-manager" | "audit-logs"
+    | "assign-task"
+    | "add-intern"
+    | "interns-catalog"
+    | "attendance-monitor"
+    | "leave-approvals"
+    | "submissions-grader"
+    | "calendar-manager"
+    | "notifications-broadcast"
+    | "audit-logs"
   >("assign-task");
 
   const [isLoadingInterns, setIsLoadingInterns] = useState(false);
@@ -290,6 +305,70 @@ export default function AdminView() {
     setHolidayTitle("");
   };
 
+  // --- Notification & Broadcast State ---
+  const [notifTargetType, setNotifTargetType] = useState<"ALL" | "DOMAIN" | "SPECIFIC">("ALL");
+  const [notifTargetDomain, setNotifTargetDomain] = useState<string>("Full Stack Web Development");
+  const [notifSelectedEmails, setNotifSelectedEmails] = useState<string[]>([]);
+  const [notifChipInput, setNotifChipInput] = useState<string>("");
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifCategory, setNotifCategory] = useState<"Task Assignment" | "Announcement" | "Deadline" | "General" | "Urgent">("Announcement");
+  const [notifContent, setNotifContent] = useState("");
+  const [notifSuccessMsg, setNotifSuccessMsg] = useState(false);
+
+  const handleAddNotifChipEmail = (emailToAdd: string) => {
+    const cleaned = emailToAdd.trim().toLowerCase();
+    if (!cleaned) return;
+    if (!notifSelectedEmails.includes(cleaned)) {
+      setNotifSelectedEmails([...notifSelectedEmails, cleaned]);
+    }
+    setNotifChipInput("");
+  };
+
+  const handleNotifChipKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === "," || e.key === " ") {
+      e.preventDefault();
+      handleAddNotifChipEmail(notifChipInput);
+    }
+  };
+
+  const removeNotifEmailChip = (emailToRemove: string) => {
+    setNotifSelectedEmails(notifSelectedEmails.filter((e) => e !== emailToRemove));
+  };
+
+  const handleSendNotificationBroadcast = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifTitle.trim() || !notifContent.trim()) return;
+
+    let targetEmails: string[] = [];
+    if (notifTargetType === "ALL") {
+      targetEmails = ["ALL"];
+    } else if (notifTargetType === "DOMAIN") {
+      targetEmails = [`domain:${notifTargetDomain}`];
+    } else {
+      let current = [...notifSelectedEmails];
+      if (notifChipInput.trim() && !current.includes(notifChipInput.trim().toLowerCase())) {
+        current.push(notifChipInput.trim().toLowerCase());
+      }
+      if (current.length === 0) return;
+      targetEmails = current;
+    }
+
+    sendNotification({
+      title: notifTitle.trim(),
+      content: notifContent.trim(),
+      category: notifCategory,
+      targetEmails,
+      sender: "Admin (DevTech)",
+    });
+
+    setNotifTitle("");
+    setNotifContent("");
+    setNotifSelectedEmails([]);
+    setNotifChipInput("");
+    setNotifSuccessMsg(true);
+    setTimeout(() => setNotifSuccessMsg(false), 4000);
+  };
+
   const [previewSelfieUrl, setPreviewSelfieUrl] = useState<string | null>(null);
 
   // EXPORT HANDLERS
@@ -476,6 +555,18 @@ export default function AdminView() {
         >
           <CalendarIcon className="w-4 h-4" />
           <span>Calendar</span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminSubTab("notifications-broadcast")}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition ${
+            activeAdminSubTab === "notifications-broadcast"
+              ? "bg-blue-600 text-white shadow-md font-bold"
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <Megaphone className="w-4 h-4" />
+          <span>Send Notification ({notifications.length})</span>
         </button>
 
         <button
@@ -1181,6 +1272,365 @@ export default function AdminView() {
                     </tr>
                   ))
                 )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ================= SUB-TAB 7: CALENDAR EVENT & HOLIDAY MANAGER ================= */}
+      {activeAdminSubTab === "calendar-manager" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 className="font-extrabold text-slate-900 text-sm border-b border-slate-100 pb-3 flex items-center space-x-2">
+              <CalendarIcon className="w-4 h-4 text-blue-600" />
+              <span>Add Event / Holiday to Calendar</span>
+            </h3>
+            <form onSubmit={handleAddHoliday} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Event / Holiday Date</label>
+                <input
+                  type="date"
+                  required
+                  value={holidayDate}
+                  onChange={(e) => setHolidayDate(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Event Title / Description</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Diwali Holiday / Project Milestone Sprint"
+                  value={holidayTitle}
+                  onChange={(e) => setHolidayTitle(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Category Type</label>
+                <select
+                  value={holidayType}
+                  onChange={(e) => setHolidayType(e.target.value as any)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900"
+                >
+                  <option value="Holiday">Holiday (Office Closed)</option>
+                  <option value="Flexible Workday">Flexible Workday</option>
+                  <option value="Announcement">Announcement / Event</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-md transition flex items-center justify-center space-x-2"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>PUBLISH EVENT TO ALL INTERNS</span>
+              </button>
+            </form>
+          </div>
+
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 className="font-extrabold text-slate-900 text-sm border-b border-slate-100 pb-3 flex items-center justify-between">
+              <span>Published Calendar Events & Holidays ({holidays.length})</span>
+              <span className="text-xs text-blue-600 font-semibold">Broadcasted to all intern calendars</span>
+            </h3>
+
+            {holidays.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-xs">
+                No custom calendar events published yet. Add an event on the left form.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {holidays.map((h) => (
+                  <div key={h.id} className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2 relative group">
+                    <div className="flex items-center justify-between font-bold text-blue-900">
+                      <span className="text-sm">{h.title}</span>
+                      <span className="bg-blue-600 text-white px-2 py-0.5 rounded-full text-[10px] uppercase font-mono">
+                        {h.type}
+                      </span>
+                    </div>
+                    <p className="text-slate-600 font-mono text-xs">Date: {h.date}</p>
+                    <button
+                      onClick={() => deleteHoliday(h.id)}
+                      className="mt-2 text-red-600 hover:text-red-800 text-[11px] font-bold flex items-center space-x-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Event</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= SUB-TAB 8: NOTIFICATIONS & ANNOUNCEMENTS BROADCAST ================= */}
+      {activeAdminSubTab === "notifications-broadcast" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
+                  <Megaphone className="w-5 h-5 text-blue-600" />
+                  <span>Send Admin Notification & Announcement</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Send real-time alerts directly to selected interns or broadcast to all registered interns.
+                </p>
+              </div>
+            </div>
+
+            {notifSuccessMsg && (
+              <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+                <span>Notification successfully broadcasted to Firebase Firestore in real-time!</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSendNotificationBroadcast} className="space-y-4 text-xs">
+              {/* Target Audience Selector */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">Target Audience</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setNotifTargetType("ALL")}
+                    className={`p-3 rounded-xl border text-center font-bold transition ${
+                      notifTargetType === "ALL"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    📢 All Interns
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNotifTargetType("DOMAIN")}
+                    className={`p-3 rounded-xl border text-center font-bold transition ${
+                      notifTargetType === "DOMAIN"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    🎯 Domain Specific
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNotifTargetType("SPECIFIC")}
+                    className={`p-3 rounded-xl border text-center font-bold transition ${
+                      notifTargetType === "SPECIFIC"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    ✉️ Selected Emails ({notifSelectedEmails.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Domain selector if DOMAIN */}
+              {notifTargetType === "DOMAIN" && (
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Select Domain Track</label>
+                  <select
+                    value={notifTargetDomain}
+                    onChange={(e) => setNotifTargetDomain(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900"
+                  >
+                    {domainsList.filter((d) => d !== "All Domains").map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Specific Emails selector chips if SPECIFIC */}
+              {notifTargetType === "SPECIFIC" && (
+                <div className="space-y-2">
+                  <label className="block font-bold text-slate-700">Enter / Select Intern Email Addresses</label>
+                  <div className="p-2 bg-slate-50 border border-slate-300 rounded-xl flex flex-wrap items-center gap-1.5 min-h-[44px]">
+                    {notifSelectedEmails.map((email) => (
+                      <span
+                        key={email}
+                        className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center space-x-1 border border-blue-300"
+                      >
+                        <span>{email}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeNotifEmailChip(email)}
+                          className="hover:text-blue-900"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      type="email"
+                      value={notifChipInput}
+                      onChange={(e) => setNotifChipInput(e.target.value)}
+                      onKeyDown={handleNotifChipKeyDown}
+                      placeholder="Type email & hit Enter..."
+                      className="bg-transparent text-xs text-slate-900 focus:outline-none flex-1 min-w-[140px] px-1 py-0.5"
+                    />
+                  </div>
+
+                  <div className="max-h-32 overflow-y-auto space-y-1 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">Quick Select from Roster:</p>
+                    {registeredInterns.map((i) => (
+                      <label key={i.email} className="flex items-center space-x-2 text-xs font-medium cursor-pointer hover:bg-slate-100 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={notifSelectedEmails.includes(i.email.toLowerCase())}
+                          onChange={() => {
+                            const cleaned = i.email.toLowerCase();
+                            if (notifSelectedEmails.includes(cleaned)) {
+                              setNotifSelectedEmails(notifSelectedEmails.filter((e) => e !== cleaned));
+                            } else {
+                              setNotifSelectedEmails([...notifSelectedEmails, cleaned]);
+                            }
+                          }}
+                          className="rounded text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{i.name} ({i.email})</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Title & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Notification Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={notifTitle}
+                    onChange={(e) => setNotifTitle(e.target.value)}
+                    placeholder="e.g. Mandatory Sprint Demo Meeting Tomorrow"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Category</label>
+                  <select
+                    value={notifCategory}
+                    onChange={(e) => setNotifCategory(e.target.value as any)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900"
+                  >
+                    <option value="Announcement">Announcement</option>
+                    <option value="Task Assignment">Task Assignment</option>
+                    <option value="Deadline">Deadline Alert</option>
+                    <option value="General">General</option>
+                    <option value="Urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Content / Message */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Message Content / Details <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={notifContent}
+                  onChange={(e) => setNotifContent(e.target.value)}
+                  placeholder="Type full notification details here..."
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-md transition flex items-center justify-center space-x-2"
+              >
+                <Send className="w-4 h-4" />
+                <span>BROADCAST NOTIFICATION IN REALTIME</span>
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <h4 className="font-bold text-sm text-slate-900 border-b pb-2 flex items-center justify-between">
+              <span>Sent Notifications Log</span>
+              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-bold">
+                {notifications.length}
+              </span>
+            </h4>
+            <div className="space-y-3 max-h-[500px] overflow-y-auto text-xs">
+              {notifications.length === 0 ? (
+                <div className="py-8 text-center text-slate-400">
+                  No notifications sent yet.
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div key={n.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 relative">
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="text-slate-900">{n.title}</span>
+                      <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">
+                        {n.category}
+                      </span>
+                    </div>
+                    <p className="text-slate-600 leading-relaxed text-[11px]">{n.content}</p>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1">
+                      <span>Targets: {n.targetEmails.join(", ")}</span>
+                      <button
+                        onClick={() => deleteNotification(n.id)}
+                        className="text-red-500 hover:text-red-700 font-bold"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= SUB-TAB 9: AUDIT LOGS ================= */}
+      {activeAdminSubTab === "audit-logs" && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+          <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Activity className="w-5 h-5 text-blue-600" />
+            <span>Workspace System Audit Logs ({auditLogs.length})</span>
+          </h3>
+          <div className="overflow-x-auto text-xs">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px] bg-slate-50">
+                  <th className="py-2.5 px-3">User</th>
+                  <th className="py-2.5 px-3">Module</th>
+                  <th className="py-2.5 px-3">Action Description</th>
+                  <th className="py-2.5 px-3">Timestamp</th>
+                  <th className="py-2.5 px-3 text-right">IP</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-800 font-medium">
+                {auditLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 font-bold">{log.user}</td>
+                    <td className="py-2.5 px-3 font-mono text-blue-600">{log.module}</td>
+                    <td className="py-2.5 px-3">{log.action}</td>
+                    <td className="py-2.5 px-3 font-mono text-slate-500">{log.timestamp}</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-slate-400">{log.ip}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

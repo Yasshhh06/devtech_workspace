@@ -7,9 +7,42 @@ import { useWorkspaceStore } from "@/lib/store";
 
 export default function Header() {
   const router = useRouter();
-  const { searchQuery, setSearchQuery, currentUser, internLogout, adminLogout } = useWorkspaceStore();
+  const {
+    searchQuery,
+    setSearchQuery,
+    currentUser,
+    currentIntern,
+    notifications,
+    markNotificationAsRead,
+    setActiveTab,
+    internLogout,
+    adminLogout,
+  } = useWorkspaceStore();
+
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const userEmail = (currentIntern?.email || currentUser?.email || "").toLowerCase().trim();
+  const userDomain = currentIntern?.domain || "";
+
+  const myNotifications = notifications.filter((n) => {
+    if (!userEmail) return true; // Show all if admin or no email
+    if (n.targetEmails.includes("ALL")) return true;
+    if (n.targetEmails.map((e) => e.toLowerCase()).includes(userEmail)) return true;
+    if (userDomain && n.targetEmails.includes(`domain:${userDomain}`)) return true;
+    return false;
+  });
+
+  const unreadCount = myNotifications.filter(
+    (n) => !(n.readByEmails || []).map((e) => e.toLowerCase()).includes(userEmail)
+  ).length;
+
+  const markAllAsRead = () => {
+    if (!userEmail) return;
+    myNotifications.forEach((n) => {
+      markNotificationAsRead(n.id, userEmail);
+    });
+  };
 
   const handleSignOut = () => {
     internLogout();
@@ -45,32 +78,84 @@ export default function Header() {
             }}
             className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 relative transition"
           >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <Bell className="w-5 h-5 text-gray-600" />
+            {unreadCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 bg-red-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full border-2 border-white shadow-xs animate-pulse">
+                {unreadCount}
+              </span>
+            )}
           </button>
 
           {/* Notifications Dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-4">
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-4">
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 mb-3">
-                <h4 className="text-sm font-semibold text-gray-800">Notifications</h4>
-                <span className="text-xs text-blue-600 cursor-pointer">Mark all as read</span>
+                <h4 className="text-xs font-bold text-gray-900 flex items-center space-x-1.5">
+                  <Bell className="w-4 h-4 text-blue-600" />
+                  <span>Admin Notifications ({myNotifications.length})</span>
+                </h4>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-[11px] text-blue-600 font-bold hover:underline"
+                  >
+                    Mark all read
+                  </button>
+                )}
               </div>
-              <div className="space-y-3">
-                <div className="flex items-start space-x-3 p-2 bg-blue-50 rounded-lg text-xs">
-                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-gray-800">Mark attendance</p>
-                    <p className="text-gray-500">Please mark your attendance for today.</p>
+
+              <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                {myNotifications.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-gray-400">
+                    No new notifications from Admin.
                   </div>
-                </div>
-                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg text-xs">
-                  <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-gray-800">Task Approved</p>
-                    <p className="text-gray-500">Project tasks completed and verified.</p>
-                  </div>
-                </div>
+                ) : (
+                  myNotifications.slice(0, 6).map((n) => {
+                    const isRead = (n.readByEmails || []).map((e) => e.toLowerCase()).includes(userEmail);
+                    return (
+                      <div
+                        key={n.id}
+                        className={`p-3 rounded-xl border transition space-y-1 ${
+                          isRead ? "bg-gray-50/70 border-gray-200" : "bg-blue-50/70 border-blue-200 shadow-xs"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-gray-900 flex items-center space-x-1">
+                            {!isRead && <span className="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>}
+                            <span>{n.title}</span>
+                          </span>
+                          <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full uppercase">
+                            {n.category}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 text-xs leading-relaxed">{n.content}</p>
+                        <div className="flex items-center justify-between pt-1 text-[10px] text-gray-400 font-mono">
+                          <span>{n.createdAt}</span>
+                          {!isRead && (
+                            <button
+                              onClick={() => markNotificationAsRead(n.id, userEmail)}
+                              className="text-blue-600 font-bold hover:underline"
+                            >
+                              Mark Read
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 mt-2 text-center">
+                <button
+                  onClick={() => {
+                    setActiveTab("notifications");
+                    setShowNotifications(false);
+                  }}
+                  className="text-xs text-blue-600 font-bold hover:underline"
+                >
+                  View All Notifications →
+                </button>
               </div>
             </div>
           )}

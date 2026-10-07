@@ -13,6 +13,7 @@ import SubmissionView from "@/components/submission/SubmissionView";
 import TermsView from "@/components/terms/TermsView";
 import SettingsView from "@/components/settings/SettingsView";
 import AdminView from "@/components/admin/AdminView";
+import NotificationsView from "@/components/notifications/NotificationsView";
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function Home() {
@@ -57,6 +58,8 @@ export default function Home() {
         return <AttendanceView />;
       case "calendar":
         return <CalendarView />;
+      case "notifications":
+        return <NotificationsView />;
       case "leave":
         return <LeaveView />;
       case "submission":
