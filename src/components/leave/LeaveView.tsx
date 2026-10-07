@@ -42,8 +42,10 @@ export default function LeaveView() {
     }, 5000);
   };
 
-  // State leave requests fetched from Firestore
-  const displayRequests: LeaveRequest[] = leaveRequests;
+  const currentEmail = (currentIntern?.email || currentUser?.email || "").trim().toLowerCase();
+  const displayRequests: LeaveRequest[] = currentEmail
+    ? leaveRequests.filter((r) => (r.internEmail || "").trim().toLowerCase() === currentEmail)
+    : leaveRequests;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto font-sans pb-12">

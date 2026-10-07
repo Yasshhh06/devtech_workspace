@@ -3,7 +3,10 @@
 import React from "react";
 import { Calendar as CalendarIcon, Info, ChevronLeft, ChevronRight } from "lucide-react";
 
+import { useWorkspaceStore } from "@/lib/store";
+
 export default function CalendarView() {
+  const { holidays } = useWorkspaceStore();
   const daysInMonth = 31;
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
@@ -85,6 +88,28 @@ export default function CalendarView() {
           </div>
         </div>
       </div>
+
+      {/* Admin Published Events & Holidays List */}
+      {holidays.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3 text-xs">
+          <h4 className="font-extrabold text-slate-900 text-sm border-b border-slate-100 pb-2">
+            Upcoming Holidays & Workspace Events ({holidays.length})
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {holidays.map((h) => (
+              <div key={h.id} className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-1">
+                <div className="flex items-center justify-between font-bold text-blue-900">
+                  <span>{h.title}</span>
+                  <span className="bg-blue-600 text-white px-2 py-0.5 rounded-full text-[10px] uppercase font-mono">
+                    {h.type}
+                  </span>
+                </div>
+                <p className="text-slate-600 font-mono text-[11px]">Date: {h.date}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
