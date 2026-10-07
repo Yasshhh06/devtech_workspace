@@ -405,17 +405,18 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       markAttendance: (selfieUrl) => {
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-        const todayStr = "2026-10-06";
+        const todayStr = new Date().toISOString().split("T")[0];
         const currentEmail = get().currentIntern?.email || get().currentUser?.email || "";
         const currentName = get().currentIntern?.name || get().currentUser?.name || "Intern";
+        const customId = `att-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
 
         const newRecord: AttendanceRecord = {
-          id: `att-${Date.now()}`,
+          id: customId,
           internName: currentName,
           internEmail: currentEmail,
           domain: get().currentIntern?.domain || "Full Stack Web Development",
           date: todayStr,
-          day: 6,
+          day: new Date().getDay(),
           status: "Present",
           time: timeStr,
           selfieUrl,
@@ -425,10 +426,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         set((state) => ({
           isCheckedIn: true,
           checkinTime: timeStr,
-          attendanceHistory: [newRecord, ...state.attendanceHistory],
+          attendanceHistory: [newRecord, ...state.attendanceHistory.filter((a) => a.id !== customId)],
         }));
 
-        addDoc(collection(db, "attendance"), newRecord).catch(err => console.error(err));
+        setDoc(doc(db, "attendance", customId), newRecord, { merge: true }).catch((err) => console.error("Error saving attendance to Firestore:", err));
         get().addAuditLog(`Marked attendance for ${currentEmail}`, "Attendance");
       },
 
@@ -454,7 +455,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setTasks: (tasks) => set({ tasks }),
 
       assignTaskToIntern: (taskData) => {
+        const customId = `t-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
         const taskObj: any = {
+          id: customId,
           title: taskData.title.trim(),
           description: taskData.description ? taskData.description.trim() : "",
           assignedToEmail: taskData.assignedToEmail.toLowerCase().trim(),
@@ -471,15 +474,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         }
 
         const newTask: TaskItem = {
-          id: `t-${Date.now()}`,
           ...taskObj,
         };
 
         set((state) => ({
-          tasks: [newTask, ...state.tasks],
+          tasks: [newTask, ...state.tasks.filter((t) => t.id !== customId)],
         }));
 
-        addDoc(collection(db, "tasks"), taskObj).catch(err => console.error("Error adding task to Firestore:", err));
+        setDoc(doc(db, "tasks", customId), taskObj, { merge: true }).catch((err) => console.error("Error adding task to Firestore:", err));
         get().addAuditLog(`Assigned task "${taskData.title}" to ${taskData.assignedToEmail}`, "Task Management");
       },
 
@@ -500,7 +502,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             });
           }
 
+          const customId = `t-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+
           const taskObj: any = {
+            id: customId,
             title: title.trim(),
             description: description ? description.trim() : "",
             assignedToEmail: email.toLowerCase().trim(),
@@ -516,9 +521,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             taskObj.documentName = documentName && documentName.trim() ? documentName.trim() : "Task_Specification_Document.pdf";
           }
 
-          addDoc(collection(db, "tasks"), taskObj).catch(err => console.error("Error adding task to Firestore:", err));
+          setDoc(doc(db, "tasks", customId), taskObj, { merge: true }).catch((err) => console.error("Error adding task to Firestore:", err));
 
-          return { id: `t-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, ...taskObj } as TaskItem;
+          return { ...taskObj } as TaskItem;
         });
 
         set((prevState) => ({
@@ -533,8 +538,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       addSubmission: (projectTitle, driveLink, adminNote) => {
         const internName = get().currentIntern?.name || get().currentUser?.name || "Intern";
         const internEmail = get().currentIntern?.email || get().currentUser?.email || "";
+        const customId = `sub-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+
         const subRecord: ProjectSubmission = {
-          id: `sub-${Date.now()}`,
+          id: customId,
           internName,
           internEmail,
           projectTitle,
@@ -543,8 +550,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           submittedAt: new Date().toLocaleString(),
           status: "Awaiting Evaluation",
         };
+
         set((state) => ({
-          submissions: [subRecord, ...state.submissions],
+          submissions: [subRecord, ...state.submissions.filter((s) => s.id !== customId)],
         }));
 
         const payload: any = { ...subRecord };
@@ -552,38 +560,45 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           if (payload[k] === undefined) delete payload[k];
         });
 
-        addDoc(collection(db, "submissions"), payload).catch(err => console.error("Error saving submission to Firestore:", err));
+        setDoc(doc(db, "submissions", customId), payload, { merge: true }).catch((err) => console.error("Error saving submission to Firestore:", err));
         get().addAuditLog(`Submitted project "${projectTitle}"`, "Submissions");
       },
 
       evaluateSubmission: (id, score, status, remarks) => {
+        const numScore = Number(score);
         set((state) => ({
           submissions: state.submissions.map((sub) =>
-            sub.id === id ? { ...sub, score, status, mentorRemarks: remarks } : sub
+            sub.id === id ? { ...sub, score: numScore, status, mentorRemarks: remarks } : sub
           ),
         }));
 
-        updateDoc(doc(db, "submissions", id), {
-          score,
-          status,
-          mentorRemarks: remarks || "",
-          updatedAt: new Date().toISOString(),
-        }).catch((err) => console.error("Error updating submission score in Firestore:", err));
+        setDoc(
+          doc(db, "submissions", id),
+          {
+            score: numScore,
+            status,
+            mentorRemarks: remarks || "",
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        ).catch((err) => console.error("Error updating submission score in Firestore:", err));
 
-        get().addAuditLog(`Evaluated submission ${id}: Score ${score}`, "Submissions Evaluation");
+        get().addAuditLog(`Evaluated submission ${id}: Score ${numScore}`, "Submissions Evaluation");
       },
 
       leaveRequests: [],
       setLeaveRequests: (leaveRequests) => set({ leaveRequests }),
 
       addLeaveRequest: (req) => {
+        const customId = `leave-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
         const leaveObj: LeaveRequest = {
-          id: `leave-${Date.now()}`,
+          id: customId,
           ...req,
           status: "Pending",
         };
+
         set((state) => ({
-          leaveRequests: [leaveObj, ...state.leaveRequests],
+          leaveRequests: [leaveObj, ...state.leaveRequests.filter((l) => l.id !== customId)],
         }));
 
         const payload: any = { ...leaveObj };
@@ -591,7 +606,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           if (payload[k] === undefined) delete payload[k];
         });
 
-        addDoc(collection(db, "leaves"), payload).catch(err => console.error("Error saving leave request to Firestore:", err));
+        setDoc(doc(db, "leaves", customId), payload, { merge: true }).catch((err) => console.error("Error saving leave request to Firestore:", err));
         get().addAuditLog(`Submitted leave request for ${req.startDate}`, "Leave");
       },
 
@@ -602,11 +617,15 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           ),
         }));
 
-        updateDoc(doc(db, "leaves", id), {
-          status,
-          adminRemark: remark || "",
-          updatedAt: new Date().toISOString(),
-        }).catch((err) => console.error("Error updating leave status in Firestore:", err));
+        setDoc(
+          doc(db, "leaves", id),
+          {
+            status,
+            adminRemark: remark || "",
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        ).catch((err) => console.error("Error updating leave status in Firestore:", err));
 
         get().addAuditLog(`Updated leave request ${id} to ${status}`, "Leave Management");
       },
@@ -615,12 +634,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setHolidays: (holidays) => set({ holidays }),
 
       addHoliday: (holidayData) => {
+        const customId = `h-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
         const holObj: CalendarHoliday = {
-          id: `h-${Date.now()}`,
+          id: customId,
           ...holidayData,
         };
+
         set((state) => ({
-          holidays: [holObj, ...state.holidays],
+          holidays: [holObj, ...state.holidays.filter((h) => h.id !== customId)],
         }));
 
         const payload: any = { ...holObj };
@@ -628,7 +649,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           if (payload[k] === undefined) delete payload[k];
         });
 
-        addDoc(collection(db, "holidays"), payload).catch(err => console.error("Error saving holiday to Firestore:", err));
+        setDoc(doc(db, "holidays", customId), payload, { merge: true }).catch((err) => console.error("Error saving holiday to Firestore:", err));
         get().addAuditLog(`Added holiday: ${holidayData.title}`, "Calendar");
       },
 
