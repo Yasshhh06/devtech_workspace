@@ -12,10 +12,10 @@ export default function ProjectsView() {
 
   const currentEmail = (currentIntern?.email || currentUser?.email || "").trim().toLowerCase();
 
-  // Filter tasks assigned to current intern or include all tasks assigned by admin so none are hidden
+  // STRICT RULE: Filter tasks assigned ONLY to this intern's exact email
   const myAssignedTasks = currentEmail
     ? tasks.filter((t) => (t.assignedToEmail || "").trim().toLowerCase() === currentEmail)
-    : tasks;
+    : [];
 
   // Combined project items including default projects + tasks assigned by Admin
   const allInternProjects = [

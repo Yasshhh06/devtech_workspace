@@ -9,8 +9,8 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Devtech 22A22J Workspace | Devtech IT Solution",
-  description: "Official Devtech IT Solution Enterprise Workspace Platform - Projects, Attendance, Calendar, Standups & Team Group.",
+  title: "DevTech Workspace",
+  description: "Official DevTech IT Solution Enterprise Workspace Platform - Projects, Attendance, Calendar, Standups & Team Group.",
 };
 
 import FirebaseSyncInitializer from "@/components/FirebaseSyncInitializer";

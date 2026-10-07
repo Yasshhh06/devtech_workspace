@@ -20,8 +20,13 @@ import { useWorkspaceStore, NavTab } from "@/lib/store";
 
 export default function Sidebar() {
   const router = useRouter();
-  const { activeTab, setActiveTab, tasks, internLogout, adminLogout } = useWorkspaceStore();
+  const { activeTab, setActiveTab, tasks, currentIntern, currentUser, internLogout, adminLogout } = useWorkspaceStore();
   const [showTasksAccordion, setShowTasksAccordion] = useState(true);
+
+  const currentEmail = (currentIntern?.email || currentUser?.email || "").trim().toLowerCase();
+  const myTasks = currentEmail
+    ? tasks.filter((t) => (t.assignedToEmail || "").trim().toLowerCase() === currentEmail)
+    : [];
 
   const handleLogout = () => {
     internLogout();
@@ -92,7 +97,7 @@ export default function Sidebar() {
               </span>
               <span>My Tasks</span>
               <span className="bg-gray-100 text-gray-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                {tasks.length}
+                {myTasks.length}
               </span>
             </div>
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showTasksAccordion ? "rotate-180" : ""}`} />
@@ -100,24 +105,28 @@ export default function Sidebar() {
 
           {showTasksAccordion && (
             <div className="mt-1 space-y-0.5 pl-2">
-              {tasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-start space-x-2 px-2 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50 rounded cursor-pointer transition"
-                >
-                  <span className="mt-1 shrink-0">
-                    {task.status === "done" ? (
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                    ) : (
-                      <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
-                    )}
-                  </span>
-                  <div className="truncate">
-                    <p className="truncate text-gray-700 leading-snug">{task.title}</p>
-                    <span className="text-[9px] text-gray-400">{task.status}</span>
+              {myTasks.length === 0 ? (
+                <p className="text-[10px] text-gray-400 px-2 py-1">No tasks assigned.</p>
+              ) : (
+                myTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-start space-x-2 px-2 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50 rounded cursor-pointer transition"
+                  >
+                    <span className="mt-1 shrink-0">
+                      {task.status === "done" ? (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                      ) : (
+                        <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+                      )}
+                    </span>
+                    <div className="truncate">
+                      <p className="truncate text-gray-700 leading-snug">{task.title}</p>
+                      <span className="text-[9px] text-gray-400">{task.status}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
         </div>
