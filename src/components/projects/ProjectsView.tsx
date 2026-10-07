@@ -20,17 +20,14 @@ export default function ProjectsView() {
   // Combined project items including default projects + tasks assigned by Admin
   const allInternProjects = [
     ...myAssignedTasks.map((task) => {
-      // Find submission and evaluation for this task if present
+      // Find submission and evaluation specifically for THIS task by title & email
       const sub = submissions.find((s) => {
         const sEmail = (s.internEmail || "").trim().toLowerCase();
         const sTitle = (s.projectTitle || "").trim().toLowerCase();
         const tTitle = (task.title || "").trim().toLowerCase();
-        const isEmailMatch = !currentEmail || sEmail === currentEmail;
+        const isEmailMatch = currentEmail && sEmail === currentEmail;
         const isTitleMatch = sTitle === tTitle || sTitle.includes(tTitle) || tTitle.includes(sTitle);
         return isEmailMatch && isTitleMatch;
-      }) || submissions.find((s) => {
-        const sEmail = (s.internEmail || "").trim().toLowerCase();
-        return !currentEmail || sEmail === currentEmail;
       });
 
       return {
@@ -52,7 +49,7 @@ export default function ProjectsView() {
         const sEmail = (s.internEmail || "").trim().toLowerCase();
         const sTitle = (s.projectTitle || "").trim().toLowerCase();
         const pTitle = (p.title || "").trim().toLowerCase();
-        const isEmailMatch = !currentEmail || sEmail === currentEmail;
+        const isEmailMatch = currentEmail && sEmail === currentEmail;
         const isTitleMatch = sTitle === pTitle || sTitle.includes(pTitle) || pTitle.includes(sTitle);
         return isEmailMatch && isTitleMatch;
       });
