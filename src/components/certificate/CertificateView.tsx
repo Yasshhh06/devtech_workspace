@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Award, CheckCircle2, Download, ShieldCheck, ExternalLink, Sparkles } from "lucide-react";
+import { Award, CheckCircle2, Download } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function CertificateView() {

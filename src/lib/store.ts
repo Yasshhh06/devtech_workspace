@@ -566,22 +566,31 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
       evaluateSubmission: (id, score, status, remarks) => {
         const numScore = Number(score);
+        const targetSub = get().submissions.find((s) => s.id === id);
+
         set((state) => ({
           submissions: state.submissions.map((sub) =>
             sub.id === id ? { ...sub, score: numScore, status, mentorRemarks: remarks } : sub
           ),
         }));
 
-        setDoc(
-          doc(db, "submissions", id),
-          {
-            score: numScore,
-            status,
-            mentorRemarks: remarks || "",
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true }
-        ).catch((err) => console.error("Error updating submission score in Firestore:", err));
+        const updatePayload: any = {
+          score: numScore,
+          status,
+          mentorRemarks: remarks || "",
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (targetSub) {
+          if (targetSub.internName) updatePayload.internName = targetSub.internName;
+          if (targetSub.internEmail) updatePayload.internEmail = targetSub.internEmail;
+          if (targetSub.projectTitle) updatePayload.projectTitle = targetSub.projectTitle;
+          if (targetSub.driveLink) updatePayload.driveLink = targetSub.driveLink;
+        }
+
+        setDoc(doc(db, "submissions", id), updatePayload, { merge: true }).catch((err) =>
+          console.error("Error updating submission score in Firestore:", err)
+        );
 
         get().addAuditLog(`Evaluated submission ${id}: Score ${numScore}`, "Submissions Evaluation");
       },
@@ -699,7 +708,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         const unsubTasks = onSnapshot(collection(db, "tasks"), (snapshot) => {
           const fetchedTasks: TaskItem[] = [];
           snapshot.forEach((docSnap) => {
-            fetchedTasks.push({ id: docSnap.id, ...docSnap.data() } as TaskItem);
+            fetchedTasks.push({ ...docSnap.data(), id: docSnap.id } as TaskItem);
           });
           set({ tasks: fetchedTasks });
         });
@@ -707,7 +716,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         const unsubAttendance = onSnapshot(collection(db, "attendance"), (snapshot) => {
           const fetchedAtt: AttendanceRecord[] = [];
           snapshot.forEach((docSnap) => {
-            fetchedAtt.push({ id: docSnap.id, ...docSnap.data() } as AttendanceRecord);
+            fetchedAtt.push({ ...docSnap.data(), id: docSnap.id } as AttendanceRecord);
           });
           set({ attendanceHistory: fetchedAtt });
         });
@@ -715,7 +724,20 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         const unsubSubmissions = onSnapshot(collection(db, "submissions"), (snapshot) => {
           const fetchedSubs: ProjectSubmission[] = [];
           snapshot.forEach((docSnap) => {
-            fetchedSubs.push({ id: docSnap.id, ...docSnap.data() } as ProjectSubmission);
+            const data = docSnap.data();
+            fetchedSubs.push({
+              internName: data.internName || "",
+              internEmail: data.internEmail || "",
+              projectTitle: data.projectTitle || "",
+              driveLink: data.driveLink || "",
+              adminNote: data.adminNote || "",
+              submittedAt: data.submittedAt || "",
+              status: data.status || "Awaiting Evaluation",
+              score: data.score !== undefined && data.score !== null ? Number(data.score) : null,
+              mentorRemarks: data.mentorRemarks || "",
+              ...data,
+              id: docSnap.id,
+            } as ProjectSubmission);
           });
           set({ submissions: fetchedSubs });
         });
@@ -723,7 +745,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         const unsubLeaves = onSnapshot(collection(db, "leaves"), (snapshot) => {
           const fetchedLeaves: LeaveRequest[] = [];
           snapshot.forEach((docSnap) => {
-            fetchedLeaves.push({ id: docSnap.id, ...docSnap.data() } as LeaveRequest);
+            fetchedLeaves.push({ ...docSnap.data(), id: docSnap.id } as LeaveRequest);
           });
           set({ leaveRequests: fetchedLeaves });
         });
@@ -731,7 +753,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         const unsubHolidays = onSnapshot(collection(db, "holidays"), (snapshot) => {
           const fetchedHols: CalendarHoliday[] = [];
           snapshot.forEach((docSnap) => {
-            fetchedHols.push({ id: docSnap.id, ...docSnap.data() } as CalendarHoliday);
+            fetchedHols.push({ ...docSnap.data(), id: docSnap.id } as CalendarHoliday);
           });
           set({ holidays: fetchedHols });
         });

@@ -1035,14 +1035,16 @@ export default function AdminView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-800">
-                {submissions.length === 0 ? (
+                {submissions.filter((s) => s.internEmail || s.projectTitle || s.driveLink).length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-slate-400">
                       No project deliverables submitted yet. Interns can submit drive links from Submissions view.
                     </td>
                   </tr>
                 ) : (
-                  submissions.map((sub) => (
+                  submissions
+                    .filter((s) => s.internEmail || s.projectTitle || s.driveLink)
+                    .map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50">
                       <td className="py-3.5 px-4 font-bold text-slate-900">
                         {sub.internName}

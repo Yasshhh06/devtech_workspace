@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { User, Mail, Phone, School, Briefcase, Calendar, ShieldCheck, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function ProfileView() {
@@ -72,6 +72,7 @@ export default function ProfileView() {
                 type="text"
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
+                placeholder="e.g. +91 9876543210"
                 className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 focus:outline-none"
               />
             </div>
