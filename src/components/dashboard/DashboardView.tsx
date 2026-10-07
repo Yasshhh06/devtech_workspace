@@ -5,7 +5,7 @@ import { Folder, CheckCircle, Users, AlertTriangle, ArrowRight, FileText, Extern
 import { useWorkspaceStore } from "@/lib/store";
 
 export default function DashboardView() {
-  const { currentUser, currentIntern, projects, tasks, isCheckedIn, setActiveTab } = useWorkspaceStore();
+  const { currentUser, currentIntern, projects, tasks, notifications, isCheckedIn, setActiveTab } = useWorkspaceStore();
 
   const currentEmail = (currentIntern?.email || currentUser?.email || "").trim().toLowerCase();
 
@@ -163,30 +163,51 @@ export default function DashboardView() {
           {/* Notifications Card */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
-              <h3 className="font-bold text-gray-800 text-sm">Notifications</h3>
-              <span className="text-xs text-blue-600 font-semibold cursor-pointer">View all</span>
+              <h3 className="font-bold text-gray-800 text-sm">Notifications & Announcements</h3>
+              <button
+                onClick={() => setActiveTab("notifications")}
+                className="text-xs text-blue-600 font-semibold hover:underline"
+              >
+                View all ({notifications.filter((n) => n.targetEmails.includes("ALL") || (currentEmail && n.targetEmails.map(e => e.toLowerCase()).includes(currentEmail))).length})
+              </button>
             </div>
 
-            <div className="space-y-3">
-              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1">
-                <p className="font-bold text-gray-800">Mark attendance</p>
-                <p className="text-gray-500 text-[11px]">
-                  Please mark your attendance for today.
-                </p>
-                <button
-                  onClick={() => setActiveTab("attendance")}
-                  className="text-blue-600 font-semibold text-[11px] underline block pt-1"
-                >
-                  Mark now
-                </button>
-              </div>
+            <div className="space-y-2.5">
+              {!isCheckedIn && (
+                <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs space-y-1">
+                  <p className="font-bold text-amber-900">Mark Today's Attendance</p>
+                  <p className="text-amber-800 text-[11px]">
+                    Please mark your check-in attendance for today with selfie verification.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab("attendance")}
+                    className="text-blue-600 font-bold text-[11px] underline block pt-0.5"
+                  >
+                    Mark now →
+                  </button>
+                </div>
+              )}
 
-              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1">
-                <p className="font-bold text-gray-800">Dear DevTech Intern</p>
-                <p className="text-gray-500 text-[11px] leading-relaxed">
-                  Welcome to DevTech IT Solution Central Workspace. Check your assigned tasks below.
-                </p>
-              </div>
+              {notifications
+                .filter((n) => {
+                  if (!currentEmail) return true;
+                  if (n.targetEmails.includes("ALL")) return true;
+                  if (n.targetEmails.map((e) => e.toLowerCase()).includes(currentEmail)) return true;
+                  if (currentIntern?.domain && n.targetEmails.includes(`domain:${currentIntern.domain}`)) return true;
+                  return false;
+                })
+                .slice(0, 3)
+                .map((n) => (
+                  <div key={n.id} className="bg-gray-50 border border-gray-100 p-3 rounded-xl text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-gray-900">{n.title}</p>
+                      <span className="text-[9px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">
+                        {n.category}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 text-[11px] leading-relaxed line-clamp-2">{n.content}</p>
+                  </div>
+                ))}
             </div>
           </div>
 

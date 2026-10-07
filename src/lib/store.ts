@@ -8,22 +8,12 @@ export type NavTab =
   | "projects"
   | "attendance"
   | "calendar"
-  | "standup"
+  | "notifications"
   | "leave"
   | "submission"
   | "terms"
-  | "nda"
   | "settings"
-  | "assessments"
-  | "resources"
-  | "documents"
-  | "team"
-  | "meetings"
-  | "performance"
-  | "announcements"
-  | "notifications"
-  | "certificate"
-  | "profile";
+  | "admin";
 
 export interface NotificationItem {
   id: string;
